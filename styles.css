@@ -1,0 +1,41 @@
+body {
+  margin: 0;
+  box-sizing: border-box;
+  padding: 0px;
+  height: 100vh;
+}
+
+td {
+  width: 5px;
+  height: 5px;
+}
+
+.flex {
+  display: flex;
+}
+
+.flex.center {
+  align-items: center;
+}
+
+.main-line {
+  height: 75%;
+}
+
+#main {
+  /* background-color: #eeffff; */
+  flex: 3 0 0;
+  padding: 20px;
+}
+
+#side {
+  /* background-color: #ffeeff; */
+  flex: 1 0 0;
+  padding: 0 20px;
+  min-width: 400px;
+}
+
+#bottom {
+  /* background-color: #ffffee; */
+  height: 25%;
+}
