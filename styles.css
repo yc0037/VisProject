@@ -18,14 +18,19 @@ td {
   align-items: center;
 }
 
+.title {
+  justify-content: center;
+  height: 10%;
+}
+
 .main-line {
-  height: 75%;
+  height: 65%;
 }
 
 #main {
   /* background-color: #eeffff; */
   flex: 3 0 0;
-  padding: 20px;
+  padding-bottom: 20px;
 }
 
 #side {
