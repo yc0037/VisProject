@@ -8,10 +8,16 @@
 <body>
   <div class="title flex center">Title</div>
   <div class="main-line flex">
-    <div id="main" ></div>
-    <div id="side" class="flex center" ></div>
+    <div id="main" >
+      <div class="tooltip" id="main-tooltip"></div>
+    </div>
+    <div id="side" >
+      <div class="tooltip" id="side-tooltip"></div>
+    </div>
   </div>
-  <div id="bottom" ></div>
+  <div id="bottom" >
+    <div class="tooltip" id="bottom-tooltip"></div>
+  </div>
   <script src="./js/d3.min.js"></script>
   <script src="./js/lodash.min.js"></script>
   <script type="module" src="./js/script.js"></script>

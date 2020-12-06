@@ -5,11 +5,6 @@ body {
   height: 100vh;
 }
 
-td {
-  width: 5px;
-  height: 5px;
-}
-
 .flex {
   display: flex;
 }
@@ -20,7 +15,7 @@ td {
 
 .title {
   justify-content: center;
-  height: 10%;
+  height: 5%;
 }
 
 .main-line {
@@ -28,19 +23,27 @@ td {
 }
 
 #main {
-  /* background-color: #eeffff; */
+  background-color: #eeffff;
   flex: 3 0 0;
   padding-bottom: 20px;
 }
 
 #side {
-  /* background-color: #ffeeff; */
+  background-color: #ffeeff;
   flex: 1 0 0;
-  padding: 0 20px;
-  min-width: 400px;
+  min-width: 450px;
 }
 
 #bottom {
-  /* background-color: #ffffee; */
-  height: 25%;
+  background-color: #ffffee;
+  height: 30%;
+}
+
+.tooltip {
+  position: absolute;
+  visibility: hidden;
+  padding: 10px;
+  border-radius: 5%;
+  border: 1px solid #888888;
+  background-color: #ffffffcc;
 }
