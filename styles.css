@@ -23,18 +23,21 @@ body {
 }
 
 #main {
+  position: relative;
   background-color: #eeffff;
   flex: 3 0 0;
   padding-bottom: 20px;
 }
 
 #side {
+  position: relative;
   background-color: #ffeeff;
   flex: 1 0 0;
   min-width: 450px;
 }
 
 #bottom {
+  position: relative;
   background-color: #ffffee;
   height: 30%;
 }
@@ -46,4 +49,11 @@ body {
   border-radius: 5%;
   border: 1px solid #888888;
   background-color: #ffffffcc;
+}
+
+#bottom-tooltip {
+  padding: 0;
+  border: none;
+  background-color: transparent;
+  font-size: 10px;
 }
