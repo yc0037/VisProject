@@ -46,3 +46,10 @@ export const colors = {
   "地铁燕房线": "#ee782e",
   "地铁亦庄线": "#f0087d"
 }
+
+export const windowWidth = document.documentElement.clientWidth;
+export const windowHeight = document.documentElement.clientHeight;
+export const outerMargin = 20;
+export const mainWidth = document.querySelector('#main').clientWidth;
+export const mainHeight = document.querySelector('#main').clientHeight;
+export const sideWidth = document.querySelector('#side').clientWidth;
