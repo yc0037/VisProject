@@ -7,7 +7,8 @@ let geoFeature;
 let geopath;
 let geoprojection;
 
-const beijingMap = 'https://geo.datav.aliyun.com/areas_v2/bound/110000_full.json';
+// const beijingMap = 'https://geo.datav.aliyun.com/areas_v2/bound/110000_full.json';
+const beijingMap = './data/110000_full.json';
 
 export async function initMain() {
   geoFeature = await fetch(beijingMap)
