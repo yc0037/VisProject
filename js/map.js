@@ -43,7 +43,7 @@ export async function initMain() {
     g.selectAll('.border-path')
       .attr('stroke-width', 0.2 / Math.sqrt(e.transform.k));
     g.selectAll('.fake-point')
-      .attr('d', geopath.pointRadius(Math.max(1.3, 4 / Math.sqrt(currentScale))));
+      .attr('d', geopath.pointRadius(Math.max(1.3, 4 / Math.sqrt(currentScale)) * mainWidth / 508));
   });
   mainSvg.call(zoom);
   drawLegend();
@@ -85,7 +85,7 @@ async function drawSubway() {
     .data(stations)
     .enter().append('path')
       .attr('class', 'path-point')
-      .attr('d', geopath.pointRadius(1.3))
+      .attr('d', geopath.pointRadius(1.3 * mainWidth / 508))
       .attr('transform', `translate(0, -${mainHeight * mainWidth / 1600})`)
       .attr('fill', '#ffffff')
       .attr('stroke', '#333333')
@@ -95,7 +95,7 @@ async function drawSubway() {
     .data(stations)
     .enter().append('path')
       .attr('class', 'fake-point')
-      .attr('d', geopath.pointRadius(4))
+      .attr('d', geopath.pointRadius(4 * mainWidth / 508))
       .attr('transform', `translate(0, -${mainHeight * mainWidth / 1600})`)
       .attr('fill', 'transparent')
       .attr('id', d => d.properties.name + '-fake')
@@ -103,9 +103,9 @@ async function drawSubway() {
         d3.select(`#${d.properties.name}`)
           .transition()
           .duration(100)
-          .attr('d', geopath.pointRadius(2));
+          .attr('d', geopath.pointRadius(2 * mainWidth / 508));
         d3.select(`#${d.properties.name}-fake`)
-          .attr('d', geopath.pointRadius(Math.max(2, 4 / Math.sqrt(currentScale))));
+          .attr('d', geopath.pointRadius(Math.max(2, 4 / Math.sqrt(currentScale)) * mainWidth / 508));
         let content = `${d.properties.name}`;
         d3.select('#main-tooltip')
           .html(content)
@@ -117,9 +117,9 @@ async function drawSubway() {
         d3.select(`#${d.properties.name}`)
           .transition()
           .duration(100)
-          .attr('d', geopath.pointRadius(1.3));
+          .attr('d', geopath.pointRadius(1.3 * mainWidth / 508));
         d3.select(`#${d.properties.name}-fake`)
-          .attr('d', geopath.pointRadius(Math.max(1.3, 4 / Math.sqrt(currentScale))));
+          .attr('d', geopath.pointRadius(Math.max(1.3, 4 / Math.sqrt(currentScale)) * mainWidth / 508));
         d3.select('#main-tooltip')
           .style('visibility', 'hidden');
       })
@@ -152,31 +152,64 @@ function drawLegend() {
       d3.select(`#legend-${key}`)
         .style('background-color', '#eeeeeedd');
       d3.select(`#subway-line-${key}`)
-      .attr('stroke', colors[key]);
+        .attr('stroke', colors[key]);
     })
   }
 }
 
-function generateHeatMap(center, delta = [0.003, 0.0023]) {
+function generateHeatMap(center, delta = [0.003, 0.0023], maxDis = 10) {
   let centerX = center[0];
   let centerY = center[1];
   let deltaX = delta[0];
   let deltaY = delta[1];
   let points = [];
-  for (let i = -10; i <= 10; i++) {
-    for (let j = -10; j <= 10; j++) {
-      let point = utils.getPointJson();
-      point.geometry.coordinates = [centerX + i * deltaX, centerY + j * deltaY];
-      points.push(point);
-    }
+
+  let flag = true;
+  let i = 0, j = 0, t = 0, prevT = -1;
+  while (flag) {
+    flag = false;
+    for (let i = 0, it = Math.sqrt(t); i <= it; i++)
+      for (let j = Math.ceil(Math.sqrt(Math.max(prevT - i * i, 0))), jt = Math.sqrt(t - i * i); j <= jt; j++)
+        for (let k = -1; k <= 1; k = k + 2)
+          if (i != 0 || k != 1)
+            for (let l = -1; l <= 1; l = l + 2)
+              if (j != 0 || l != 1) {
+                let dis = actualDistance(centerX, centerY, centerX + k * i * deltaX, centerY + l * j * deltaY);
+                if (dis <= maxDis) {
+                  let point = utils.getPointJson();
+                  point.geometry.coordinates = [centerX + k * i * deltaX, centerY + l * j * deltaY];
+                  point.colorIndex = dis / maxDis;
+                  points.push(point);
+                  flag = true;
+                }
+              }
+    prevT = t;
+    t = (t + 1) * 2;
   }
-  g.selectAll('.heat_point')
+
+  var a = d3.rgb(0, 0, 0);
+  var b = d3.rgb(255, 255, 255);
+  var c = d3.rgb(47, 84, 235);
+  
+  var pointColorInterpolate = d3.interpolate(a, b);
+  var lineColorInterpolate = d3.interpolate(c, b);
+
+  g.selectAll('.heat-point')
     .remove();
-  addPoints(points, 'heat_point');
+  g.selectAll('.heat-point')
+    .data(points)
+    .enter().append('path')
+      .attr('class', 'heat-point')
+      .attr('d', geopath.pointRadius(1.3 * mainWidth / 508))
+      .attr('transform', `translate(0, -${mainHeight * mainWidth / 1600})`)
+      .attr('fill', d => pointColorInterpolate(d.colorIndex));
+  
+  console.log(mainWidth);
+
   points.forEach(function(point) {
     let min = 100000;
     for (let i = 0; i < stations.length; i++) {
-      let dis = distance(stations[i].geometry.coordinates[0], stations[i].geometry.coordinates[1],
+      let dis = directDistance(stations[i].geometry.coordinates[0], stations[i].geometry.coordinates[1],
           point.geometry.coordinates[0], point.geometry.coordinates[1]);
       if (dis < min) {
         min = dis;
@@ -184,7 +217,6 @@ function generateHeatMap(center, delta = [0.003, 0.0023]) {
       }
     }
   })
-  console.log(points);
   g.selectAll('line')
     .data(points)
     .join('line')
@@ -193,31 +225,22 @@ function generateHeatMap(center, delta = [0.003, 0.0023]) {
       .attr('x2', d => geoprojection(d.geometry.coordinates)[0])
       .attr('y2', d => geoprojection(d.geometry.coordinates)[1])
       .attr('transform', `translate(0, -${mainHeight * mainWidth / 1600})`)
-      .attr('stroke', '#2f54eb')
+      .attr('stroke', d => lineColorInterpolate(d.colorIndex))
       .attr('stroke-width', '0.15px');
-}
 
-function addPoints(points, _class) {
-  g.selectAll('.' + _class)
-    .data(points)
-    .enter().append('path')
-      .attr('class', _class)
-      .attr('d', geopath.pointRadius(1.3))
-      .attr('transform', `translate(0, -${mainHeight * mainWidth / 1600})`)
-      .attr('fill', '#ffffff')
-      .attr('stroke', '#333333')
-      .attr('stroke-width', 0.2);
   align();
 }
 
 function align() {
   g.selectAll('.path-link').raise();
+  g.selectAll('.heat-point').raise();
+  g.selectAll('line').raise();
   g.selectAll('.path-point').raise();
   g.selectAll('.fake-point').raise();
 }
 
 const EARTH_RADIUS = 6378.137;
-function distance(lat1, lng1, lat2, lng2) {
+function directDistance(lat1, lng1, lat2, lng2) {
 
   function rad(d) {
     return d * Math.PI / 180;
@@ -232,4 +255,9 @@ function distance(lat1, lng1, lat2, lng2) {
           Math.cos(radLat1)*Math.cos(radLat2)*Math.pow(Math.sin(b/2),2)));
   s = s * EARTH_RADIUS;
   return s;
+}
+
+function actualDistance(lat1, lng1, lat2, lng2) {
+  // TODO: 计算两点之间最短距离，可乘坐地铁
+  return directDistance(lat1, lng1, lat2, lng2);
 }
