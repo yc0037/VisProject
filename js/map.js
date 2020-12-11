@@ -126,6 +126,9 @@ async function drawSubway() {
       .on('click', (e, d) => {
         generateHeatMap(d.geometry.coordinates);
       });
+
+    // console.log(directDistance(116.384209, 39.900098, 116.374314, 39.899765)); // 837
+    // console.log(directDistance(116.374072, 39.907383, 116.374314, 39.899765)); // 828
 }
 
 function drawLegend() {
@@ -157,7 +160,7 @@ function drawLegend() {
   }
 }
 
-function generateHeatMap(center, delta = [0.003, 0.0023], maxDis = 10) {
+function generateHeatMap(center, delta = [0.003, 0.002335], maxDis = 10) {
   let centerX = center[0];
   let centerY = center[1];
   let deltaX = delta[0];
@@ -203,8 +206,6 @@ function generateHeatMap(center, delta = [0.003, 0.0023], maxDis = 10) {
       .attr('d', geopath.pointRadius(1.3 * mainWidth / 508))
       .attr('transform', `translate(0, -${mainHeight * mainWidth / 1600})`)
       .attr('fill', d => pointColorInterpolate(d.colorIndex));
-  
-  console.log(mainWidth);
 
   points.forEach(function(point) {
     let min = 100000;
@@ -239,25 +240,11 @@ function align() {
   g.selectAll('.fake-point').raise();
 }
 
-const EARTH_RADIUS = 6378.137;
-function directDistance(lat1, lng1, lat2, lng2) {
-
-  function rad(d) {
-    return d * Math.PI / 180;
-  }
-
-  let radLat1 = rad(lat1);
-  let radLat2 = rad(lat2);
-  let a = radLat1 - radLat2;
-  let b = rad(lng1) - rad(lng2);
-
-  let s = 2 * Math.asin(Math.sqrt(Math.pow(Math.sin(a/2),2) +
-          Math.cos(radLat1)*Math.cos(radLat2)*Math.pow(Math.sin(b/2),2)));
-  s = s * EARTH_RADIUS;
-  return s;
+function directDistance(lat1, lon1, lat2, lon2) {
+  return Math.sqrt((lat1 - lat2) * (lat1 - lat2) * 7150 + (lon1 - lon2) * (lon1 - lon2) * 11800);
 }
 
-function actualDistance(lat1, lng1, lat2, lng2) {
+function actualDistance(lat1, lon1, lat2, lon2) {
   // TODO: 计算两点之间最短距离，可乘坐地铁
-  return directDistance(lat1, lng1, lat2, lng2);
+  return directDistance(lat1, lon1, lat2, lon2);
 }
