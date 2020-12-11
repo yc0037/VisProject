@@ -17,7 +17,7 @@ let stations;
 export async function initMain() {
   geoFeature = await fetch(beijingMap)
     .then(response => response.json());
-  geoprojection = d3.geoMercator()
+  geoprojection = d3.geoTransverseMercator().angle(231)
                     .fitExtent([[-mainWidth, mainHeight * (-3.5)], 
                                 [mainWidth * 2.3, mainHeight * 3.5]], 
                                 geoFeature);
