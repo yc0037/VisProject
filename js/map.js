@@ -127,8 +127,8 @@ async function drawSubway() {
         generateHeatMap(d.geometry.coordinates);
       });
 
-    // console.log(directDistance(116.384209, 39.900098, 116.374314, 39.899765)); // 837
-    // console.log(directDistance(116.374072, 39.907383, 116.374314, 39.899765)); // 828
+    console.log(directDistance(116.384209, 39.900098, 116.374314, 39.899765, 'Manhattan')); // 837
+    console.log(directDistance(116.374072, 39.907383, 116.374314, 39.899765, 'Manhattan')); // 828
 }
 
 function drawLegend() {
@@ -211,7 +211,7 @@ function generateHeatMap(center, delta = [0.003, 0.002335], maxDis = 10) {
     let min = 100000;
     for (let i = 0; i < stations.length; i++) {
       let dis = directDistance(stations[i].geometry.coordinates[0], stations[i].geometry.coordinates[1],
-          point.geometry.coordinates[0], point.geometry.coordinates[1]);
+          point.geometry.coordinates[0], point.geometry.coordinates[1], 'Euclidean');
       if (dis < min) {
         min = dis;
         point.nearest = stations[i];
@@ -240,11 +240,16 @@ function align() {
   g.selectAll('.fake-point').raise();
 }
 
-function directDistance(lat1, lon1, lat2, lon2) {
-  return Math.sqrt((lat1 - lat2) * (lat1 - lat2) * 7150 + (lon1 - lon2) * (lon1 - lon2) * 11800);
+function directDistance(lat1, lon1, lat2, lon2, type) {
+  if (type == 'Euclidean') {
+    return Math.sqrt((lat1 - lat2) * (lat1 - lat2) * 7150 + (lon1 - lon2) * (lon1 - lon2) * 11800);
+  }
+  if (type == 'Manhattan') {
+    return Math.sqrt((lat1 - lat2) * (lat1 - lat2) * 7150) + Math.sqrt((lon1 - lon2) * (lon1 - lon2) * 11800);
+  }
 }
 
 function actualDistance(lat1, lon1, lat2, lon2) {
   // TODO: 计算两点之间最短距离，可乘坐地铁
-  return directDistance(lat1, lon1, lat2, lon2);
+  return directDistance(lat1, lon1, lat2, lon2, 'Manhattan');
 }
