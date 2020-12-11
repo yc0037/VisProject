@@ -84,3 +84,7 @@ body {
   border-radius: 20%;
   margin-right: 10px;
 }
+
+.svg text, text, html {
+  user-select: none;
+}

@@ -104,7 +104,7 @@ export function initSide() {
           .attr('x', sideWidth * 0.9 - 4)
           .attr('y', topOffset + distMatrix.length * cellWidth + 55)
           .attr('font-size', 12)
-          .text('10');
+          .text('10')
 }
 
 function _updateSide() {
