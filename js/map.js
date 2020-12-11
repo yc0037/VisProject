@@ -35,7 +35,11 @@ export async function initMain() {
     .attr('fill', 'transparent')
     .attr('stroke', '#666666')
     .attr('stroke-width', 0.2)
-    .attr('id', 'border-path');
+    .attr('id', 'border-path')
+    .on("click", (e, d) => {
+      g.selectAll('.heat-point').remove();
+      g.selectAll('.heat-line').remove();
+    });
   drawSubway();
   const zoom = d3.zoom().on('zoom', e => {
     currentScale = e.transform.k;
@@ -127,8 +131,8 @@ async function drawSubway() {
         generateHeatMap(d.geometry.coordinates);
       });
 
-    console.log(directDistance(116.384209, 39.900098, 116.374314, 39.899765, 'Manhattan')); // 837
-    console.log(directDistance(116.374072, 39.907383, 116.374314, 39.899765, 'Manhattan')); // 828
+    console.log(directDistance(116.384209, 39.900098, 116.374314, 39.899765, 'Manhattan')); // 837m
+    console.log(directDistance(116.374072, 39.907383, 116.374314, 39.899765, 'Manhattan')); // 828m
 }
 
 function drawLegend() {
@@ -149,13 +153,17 @@ function drawLegend() {
       d3.select(`#legend-${key}`)
         .style('background-color', '#dddddddd');
       d3.select(`#subway-line-${key}`)
-        .attr('stroke', d3.color(colors[key]).brighter().toString());
+        .attr('stroke', d3.color(colors[key]).darker().toString())
+        .attr('stroke-width', 2.5)
+        .raise();
     });
     legend.on('mouseout', e => {
       d3.select(`#legend-${key}`)
         .style('background-color', '#eeeeeedd');
       d3.select(`#subway-line-${key}`)
-        .attr('stroke', colors[key]);
+        .attr('stroke', colors[key])
+        .attr('stroke-width', 1.5)
+        .lower();
     })
   }
 }
@@ -168,7 +176,8 @@ function generateHeatMap(center, delta = [0.003, 0.002335], maxDis = 10) {
   let points = [];
 
   let flag = true;
-  let i = 0, j = 0, t = 0, prevT = -1;
+  let t = 0, prevT = -1;
+
   while (flag) {
     flag = false;
     for (let i = 0, it = Math.sqrt(t); i <= it; i++)
@@ -190,51 +199,51 @@ function generateHeatMap(center, delta = [0.003, 0.002335], maxDis = 10) {
     t = (t + 1) * 2;
   }
 
-  var a = d3.rgb(0, 0, 0);
-  var b = d3.rgb(255, 255, 255);
-  var c = d3.rgb(47, 84, 235);
-  
-  var pointColorInterpolate = d3.interpolate(a, b);
-  var lineColorInterpolate = d3.interpolate(c, b);
+var a = d3.rgb(0, 0, 0);
+var b = d3.rgb(255, 255, 255);
+var c = d3.rgb(47, 84, 235);
 
-  g.selectAll('.heat-point')
-    .remove();
-  g.selectAll('.heat-point')
-    .data(points)
-    .enter().append('path')
-      .attr('class', 'heat-point')
-      .attr('d', geopath.pointRadius(1.3 * mainWidth / 508))
-      .attr('transform', `translate(0, -${mainHeight * mainWidth / 1600})`)
-      .attr('fill', d => pointColorInterpolate(d.colorIndex));
+var pointColorInterpolate = d3.interpolate(a, b);
+var lineColorInterpolate = d3.interpolate(c, b);
 
-  points.forEach(function(point) {
-    let min = 100000;
-    for (let i = 0; i < stations.length; i++) {
-      let dis = directDistance(stations[i].geometry.coordinates[0], stations[i].geometry.coordinates[1],
-          point.geometry.coordinates[0], point.geometry.coordinates[1], 'Euclidean');
-      if (dis < min) {
-        min = dis;
-        point.nearest = stations[i];
-      }
+g.selectAll('.heat-point')
+  .data(points)
+  .join('path')
+    .attr('class', 'heat-point')
+    .attr('d', geopath.pointRadius(1.3 * mainWidth / 508))
+    .attr('transform', `translate(0, -${mainHeight * mainWidth / 1600})`)
+    .attr('fill', d => pointColorInterpolate(d.colorIndex));
+
+points.forEach(function(point) {
+  let min = 100000;
+  for (let i = 0; i < stations.length; i++) {
+    let dis = directDistance(stations[i].geometry.coordinates[0], stations[i].geometry.coordinates[1],
+        point.geometry.coordinates[0], point.geometry.coordinates[1], 'Euclidean');
+    if (dis < min) {
+      min = dis;
+      point.nearest = stations[i];
     }
-  })
-  g.selectAll('line')
-    .data(points)
-    .join('line')
-      .attr('x1', d => geoprojection(d.nearest.geometry.coordinates)[0])
-      .attr('y1', d => geoprojection(d.nearest.geometry.coordinates)[1])
-      .attr('x2', d => geoprojection(d.geometry.coordinates)[0])
-      .attr('y2', d => geoprojection(d.geometry.coordinates)[1])
-      .attr('transform', `translate(0, -${mainHeight * mainWidth / 1600})`)
-      .attr('stroke', d => lineColorInterpolate(d.colorIndex))
-      .attr('stroke-width', '0.15px');
+  }
+})
 
-  align();
+g.selectAll('.heat-line')
+  .data(points)
+  .join('line')
+    .attr('class', 'heat-line')
+    .attr('x1', d => geoprojection(d.nearest.geometry.coordinates)[0])
+    .attr('y1', d => geoprojection(d.nearest.geometry.coordinates)[1])
+    .attr('x2', d => geoprojection(d.geometry.coordinates)[0])
+    .attr('y2', d => geoprojection(d.geometry.coordinates)[1])
+    .attr('transform', `translate(0, -${mainHeight * mainWidth / 1600})`)
+    .attr('stroke', d => lineColorInterpolate(d.colorIndex))
+    .attr('stroke-width', '0.5px');
+
+  arrangeOrder();
 }
 
-function align() {
-  g.selectAll('.path-link').raise();
+function arrangeOrder() {
   g.selectAll('.heat-point').raise();
+  g.selectAll('.path-link').raise();
   g.selectAll('line').raise();
   g.selectAll('.path-point').raise();
   g.selectAll('.fake-point').raise();
