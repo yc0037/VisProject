@@ -14,7 +14,6 @@ const beijingMap = './data/110000_full.json';
 let currentScale = 1;
 let currentTranslate = d3.zoomIdentity;
 let currentNode;
-let currentDestination;
 let mainSvg;
 let g;
 let map;
@@ -301,6 +300,9 @@ function generateHeatMap_Station(id, center, delta = [0.003, 0.002335], maxDis =
   var pointColorInterpolate = d3.interpolate(a, b);
   var lineColorInterpolate = d3.interpolate(c, b);
 
+  let currentDestination;
+  let currentD;
+
   g.selectAll('.heat-point')
     .data(points)
     .join('path')
@@ -310,14 +312,14 @@ function generateHeatMap_Station(id, center, delta = [0.003, 0.002335], maxDis =
       .attr('fill', d => pointColorInterpolate(d.colorIndex))
     .on('mouseover', function(e, d) {
       if (currentDestination) {
-        console.log('suc');
-        currentDestination.attr('fill', pointColorInterpolate(d.colorIndex))
+        currentDestination.attr('fill', pointColorInterpolate(currentD.colorIndex))
           .attr('stroke', 'none')
           .lower();
         map.lower();
         d3.select('#walk-line').remove();
       }
       currentDestination = d3.select(this);
+      currentD = d;
 
       let path = findPath(id, d.nearest.id);
       g.selectAll('.path-line')
@@ -351,9 +353,6 @@ function generateHeatMap_Station(id, center, delta = [0.003, 0.002335], maxDis =
         .raise();
       currentNode.raise();
     })
-    .on('mouseout', function(e, d) {
-      currentDestination = d3.select(this);
-    })
     .on('click', normalMode);
 
   g.selectAll('.heat-line')
@@ -380,7 +379,6 @@ function normalMode() {
   detailMode = false;
   currentNode.attr('stroke', '#333333')
     .attr('stroke-width', 0.2);
-  currentDestination = null;
   g.select('#walk-line').remove();
   g.selectAll('.heat-point').remove();
   g.selectAll('.path-line').remove();
