@@ -306,16 +306,13 @@ function calcDistForStations(links) {
         let tNextName = stations[link.stations[(j + 2) % jt]].properties.name;
         if (j === jt - 2)
         tNextName = stations[link.stations[1]].properties.name;
-        // console.log(`${lineName}: ${sName}---${tName}/${tName}---${tNextName}`)
         sFirst = timeData[sName][lineName][tName][0];
         tFirst = timeData[tName][lineName][tNextName][0];
       } else {
         if (j === jt - 2) {
-          // console.log(`${lineName}: ${tName}/${sName}---${firstStation}`)
           sFirst = timeData[tName][lineName][firstStation][0];
           tFirst = timeData[sName][lineName][firstStation][0];
         } else {
-          // console.log(`${lineName}: ${sName}/${tName}---${lastStation}`)
           sFirst = timeData[sName][lineName][lastStation][0];
           tFirst = timeData[tName][lineName][lastStation][0];
         }
@@ -330,7 +327,6 @@ function calcDistForStations(links) {
           dis[s][t] = dis[t][s] = 1 / 12;
         }
       }
-      // console.log(dis[s][t]);
       let x = link.geometry.coordinates[j], y = link.geometry.coordinates[j + 1];
       dis[s][t] = dis[t][s] = directDistance(x[0], x[1], y[0], y[1], 'Euclidean') / 35 + 0.004;
       label[s][t] = label[t][s] = i;
