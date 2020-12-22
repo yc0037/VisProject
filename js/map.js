@@ -1,4 +1,4 @@
-import { getSubway } from "./data.js";
+import { getStationCode, getSubway } from "./data.js";
 import * as utils from './utils.js';
 
 const { mainHeight, mainWidth } = utils;
@@ -26,12 +26,14 @@ let disStations;
 let label;
 let pathStations;
 let loadingMask;
+let timeData;
 let detailMode = false;
-
 const maskTime = 200;
 
 export async function initMain() {
   geoFeature = await fetch(beijingMap)
+    .then(response => response.json());
+  timeData = await fetch('../data/subwaytime.json')
     .then(response => response.json());
   geoprojection = d3.geoTransverseMercator().angle(231)
     .fitExtent([[-mainWidth, -mainHeight * 3.5], 
@@ -144,6 +146,7 @@ async function drawSubway() {
     line.properties.color = utils.colors[v.name];
     line.geometry.coordinates = v.st.map(vv => [vv.x, vv.y]);
     line.stations = v.st.map(vv => stationMap.get(vv.name));
+    line.isLoop = v.isLoop;
     if (v.isLoop) {
       line.geometry.coordinates.push([v.st[0].x, v.st[0].y]);
       line.stations.push(stationMap.get(v.st[0].name));
@@ -285,8 +288,49 @@ function calcDistForStations(links) {
   }
   for (let i = 0, it = links.length; i < it; i++) {
     let link = links[i];
-    for (let j = 0, jt = link.stations.length; j < jt - 1; j++) {
-      let s = link.stations[j], t = link.stations[j + 1];
+    let jt = link.stations.length;
+    const lineName = link.properties.name;
+    if (lineName === '地铁八通线' || lineName === '地铁亦庄线' ) {
+      jt = jt - 1;
+    } else if (lineName === '首都机场线') {
+      continue;
+    }
+    let firstStation = stations[link.stations[0]].properties.name;
+    let lastStation = stations[link.stations[jt - 1]].properties.name;
+    for (let j = 0; j < jt - 1; j++) {
+      let s = link.stations[j], t = link.stations[(j + 1) % jt];
+      const sName = stations[s].properties.name, tName = stations[t].properties.name;
+      let sFirst, tFirst;
+
+      if (link.isLoop) {
+        let tNextName = stations[link.stations[(j + 2) % jt]].properties.name;
+        if (j === jt - 2)
+        tNextName = stations[link.stations[1]].properties.name;
+        // console.log(`${lineName}: ${sName}---${tName}/${tName}---${tNextName}`)
+        sFirst = timeData[sName][lineName][tName][0];
+        tFirst = timeData[tName][lineName][tNextName][0];
+      } else {
+        if (j === jt - 2) {
+          // console.log(`${lineName}: ${tName}/${sName}---${firstStation}`)
+          sFirst = timeData[tName][lineName][firstStation][0];
+          tFirst = timeData[sName][lineName][firstStation][0];
+        } else {
+          // console.log(`${lineName}: ${sName}/${tName}---${lastStation}`)
+          sFirst = timeData[sName][lineName][lastStation][0];
+          tFirst = timeData[tName][lineName][lastStation][0];
+        }
+      }
+      if (tFirst === '00:00') {
+        dis[s][t] = dis[t][s] = 1 / 12;
+      } else {
+        sFirst = `2020-12-22 ${sFirst}`;
+        tFirst = `2020-12-22 ${tFirst}`;
+        dis[s][t] = dis[t][s] = dayjs(tFirst, 'YYYY-MM-DD HH:mm').diff(dayjs(sFirst, 'YYYY-MM-DD HH:mm'), 'hour', true);
+        if (dis[s][t] <= 0.0) {
+          dis[s][t] = dis[t][s] = 1 / 12;
+        }
+      }
+      // console.log(dis[s][t]);
       let x = link.geometry.coordinates[j], y = link.geometry.coordinates[j + 1];
       dis[s][t] = dis[t][s] = directDistance(x[0], x[1], y[0], y[1], 'Euclidean') / 35 + 0.004;
       label[s][t] = label[t][s] = i;
@@ -294,6 +338,39 @@ function calcDistForStations(links) {
       pathStations[t][s] = s;
     }
   }
+
+  // 处理首都机场线
+  const t2 = stationMap.get('T2航站楼'),
+        t3 = stationMap.get('T3航站楼'),
+        dzm = stationMap.get('东直门'),
+        syq = stationMap.get('三元桥');
+  dis[dzm][syq] = dis[syq][dzm] = 1 / 15;
+  label[dzm][syq] = label[syq][dzm] = 20;
+  pathStations[dzm][syq] = syq;
+  pathStations[syq][dzm] = dzm;
+  dis[syq][t3] = 0.3;
+  label[syq][t3] = 20;
+  pathStations[syq][t3] = t3;
+  dis[t3][t2] = 7 / 30;
+  label[t3][t2] = 20;
+  pathStations[t3][t2] = t2;
+  dis[t2][syq] = 19 / 60;
+  label[t2][syq] = 20;
+  pathStations[t2][syq] = syq;
+  // 几个漏掉的车站
+  const yzhcz = stationMap.get('亦庄火车站');
+  const cq = stationMap.get('次渠');
+  dis[yzhcz][cq] = dis[cq][yzhcz] = 1 / 12;
+  label[yzhcz][cq] = label[cq][yzhcz] = 23;
+  pathStations[yzhcz][cq] = cq;
+  pathStations[cq][yzhcz] = yzhcz;
+  const hz = stationMap.get('花庄');
+  const tq = stationMap.get('土桥');
+  dis[hz][tq] = dis[tq][hz] = 0.1;
+  label[hz][tq] = label[tq][hz] = 16;
+  pathStations[hz][tq] = tq;
+  pathStations[tq][hz] = hz;
+
   for (let k = 0; k < numStations; k++)
     for (let i = 0; i < numStations; i++)
       if (i != k)
