@@ -107,6 +107,21 @@ function showLoadingMask() {
     .style('opacity', 1);
 }
 
+const appearTimeInterpolate = d3.interpolate(10, 350);
+function showHeatPoint() {
+  g.selectAll('.heat-point').each((d, i, nodes) => {
+    setTimeout(() => {
+      d3.select(nodes[i])
+        .style('visibility', 'visible');
+      d3.select(nodes[i]).transition().ease(d3.easePolyOut).duration(120)
+        .attr('d', geopath.pointRadius(1.3 * geoScale / 40000));
+    }, appearTimeInterpolate(d.colorIndex));
+  });
+  setTimeout(() => {
+    g.selectAll('.heat-line').transition().duration(500).style('opacity', 1);
+  }, 355);
+}
+
 async function drawSubway() {
   const subwayLines = await getSubway();
   stations = subwayLines.map(v => v.st.map(vv => {
@@ -136,7 +151,7 @@ async function drawSubway() {
     return line;
   });
   disStations = calcDistForStations(links);
-
+  
   g = d3.select('#main-svg')
     .select('g')
   g.selectAll('.path-link')
@@ -215,7 +230,10 @@ async function drawSubway() {
             .attr('stroke-width', 1);
           g.selectAll('.fake-point')
             .attr('d', geopath.pointRadius(1.3 * geoScale / 40000));
-          setTimeout(() => hideLoadingMask(), maskTime);
+          setTimeout(() => {
+            hideLoadingMask();
+            setTimeout(() => showHeatPoint(), maskTime + 4);
+          }, maskTime);
         }, maskTime);
       });
     hideLoadingMask();
@@ -350,9 +368,10 @@ function generateHeatMap_Station(id, center, delta = [0.003, 0.002335], maxDis =
     .data(points)
     .join('path')
       .attr('class', 'heat-point')
-      .attr('d', geopath.pointRadius(1.3 * geoScale / 40000))
+      .attr('d', geopath.pointRadius(0))
       .attr('transform', `translate(0, -${offset})`)
       .attr('fill', d => pointColorInterpolate(d.colorIndex))
+      .style('visibility', 'hidden')
     .on('mouseover', function(e, d) {
       if (currentDestination) {
         currentDestination.attr('fill', pointColorInterpolate(currentD.colorIndex))
@@ -409,7 +428,8 @@ function generateHeatMap_Station(id, center, delta = [0.003, 0.002335], maxDis =
       .attr('transform', `translate(0, -${offset})`)
       .attr('stroke', d => lineColorInterpolate(d.colorIndex))
       .attr('stroke-width', 0.5)
-      .attr("pointer-events", 'none');
+      .attr("pointer-events", 'none')
+      .style('opacity', 0);
 
   arrangeOrder();
 }
