@@ -10,79 +10,79 @@ export async function initBottom() {
   let timeScale = d3.scaleLinear()
                     .domain([minYear - 0.1, maxYear + 1])
                     .range([outerMargin + windowWidth * 0.1, outerMargin + windowWidth * 0.9]);
-  let timeAxis = d3.axisBottom(timeScale)
-                   .ticks(timeData.length)
-                   .tickFormat(d => d);
-  let valueScale = d3.scaleLinear()
-                     .domain([0, d3.max(timeData, d => d.value)])
-                     .range([windowHeight * 0.16, windowHeight * 0.01]);
-  let valueAxis = d3.axisLeft(valueScale)
-                    .ticks(Math.ceil(d3.max(timeData, d => d.value) / 100))
-                    .tickFormat(d => d);
+  // let timeAxis = d3.axisBottom(timeScale)
+  //                  .ticks(timeData.length)
+  //                  .tickFormat(d => d);
+  // let valueScale = d3.scaleLinear()
+  //                    .domain([0, d3.max(timeData, d => d.value)])
+  //                    .range([windowHeight * 0.16, windowHeight * 0.01]);
+  // let valueAxis = d3.axisLeft(valueScale)
+  //                   .ticks(Math.ceil(d3.max(timeData, d => d.value) / 100))
+  //                   .tickFormat(d => d);
   let bottomSvg = d3.select('#bottom').append('svg')
                       .attr('id', 'bottom-container')
                       .attr('height', '100%')
                       .attr('width', '100%');
-  bottomSvg.append('g')
-        .attr('transform', `translate(0, ${0.16 * windowHeight})`)
-        .call(timeAxis)
-          .style('user-select', 'none');
-  bottomSvg.append('g')
-        .attr('transform', `translate(${outerMargin + windowWidth * 0.1}, 0)`)
-        .call(valueAxis)
-          .style('user-select', 'none');
-  // lines
-  const lines = [];
-  for (let i = 0; i < timeData.length - 1; ++i) {
-    lines.push({
-      source: timeData[i],
-      target: timeData[i + 1]
-    });
-  }
-  bottomSvg.append('g')
-    .selectAll('line')
-    .data(lines)
-    .join('line')
-      .attr('x1', d => timeScale(d.source.year))
-      .attr('x2', d => timeScale(d.target.year))
-      .attr('y1', d => valueScale(d.source.value))
-      .attr('y2', d => valueScale(d.target.value))
-      .attr('stroke', '#2f54eb')
-      .attr('stroke-width', '0.5px');
-  // points
-  bottomSvg.append('g')
-    .selectAll('circle')
-    .data(timeData)
-    .enter().append('circle')
-    .attr('cx', d => timeScale(d.year))
-    .attr('cy', d => valueScale(d.value))
-    .attr('r', 3)
-    .attr('id', d => `point-${d.year}`)
-    .style('fill', '#597ef7')
-    .style('stroke', '#2f54eb')
-    .style('stroke-width', '0.5px')
-    .on('mouseover', (e, d) => {
-      const current = d3.select(`#point-${d.year}`);
-      current
-        .transition()
-        .duration(200)
-        .attr('r', 5);
-      const tooltip = d3.select('#bottom-tooltip');
-      tooltip
-        .style('top', `${windowHeight * 0.7  + valueScale(d.value) - 25}px`)
-        .style('left', `${timeScale(d.year) - 10}px`)
-        .style('visibility', 'visible')
-        .text(d.value);
-    })
-    .on('mouseout', (e, d) => {
-      const current = d3.select(`#point-${d.year}`);
-      current
-        .transition()
-        .duration(200)
-        .attr('r', 3);
-      const tooltip = d3.select('#bottom-tooltip');
-      tooltip.style('visibility', 'hidden');
-    });
+  // bottomSvg.append('g')
+  //       .attr('transform', `translate(0, ${0.16 * windowHeight})`)
+  //       .call(timeAxis)
+  //         .style('user-select', 'none');
+  // bottomSvg.append('g')
+  //       .attr('transform', `translate(${outerMargin + windowWidth * 0.1}, 0)`)
+  //       .call(valueAxis)
+  //         .style('user-select', 'none');
+  // // lines
+  // const lines = [];
+  // for (let i = 0; i < timeData.length - 1; ++i) {
+  //   lines.push({
+  //     source: timeData[i],
+  //     target: timeData[i + 1]
+  //   });
+  // }
+  // bottomSvg.append('g')
+  //   .selectAll('line')
+  //   .data(lines)
+  //   .join('line')
+  //     .attr('x1', d => timeScale(d.source.year))
+  //     .attr('x2', d => timeScale(d.target.year))
+  //     .attr('y1', d => valueScale(d.source.value))
+  //     .attr('y2', d => valueScale(d.target.value))
+  //     .attr('stroke', '#2f54eb')
+  //     .attr('stroke-width', '0.5px');
+  // // points
+  // bottomSvg.append('g')
+  //   .selectAll('circle')
+  //   .data(timeData)
+  //   .enter().append('circle')
+  //   .attr('cx', d => timeScale(d.year))
+  //   .attr('cy', d => valueScale(d.value))
+  //   .attr('r', 3)
+  //   .attr('id', d => `point-${d.year}`)
+  //   .style('fill', '#597ef7')
+  //   .style('stroke', '#2f54eb')
+  //   .style('stroke-width', '0.5px')
+  //   .on('mouseover', (e, d) => {
+  //     const current = d3.select(`#point-${d.year}`);
+  //     current
+  //       .transition()
+  //       .duration(200)
+  //       .attr('r', 5);
+  //     const tooltip = d3.select('#bottom-tooltip');
+  //     tooltip
+  //       .style('top', `${windowHeight * 0.7  + valueScale(d.value) - 25}px`)
+  //       .style('left', `${timeScale(d.year) - 10}px`)
+  //       .style('visibility', 'visible')
+  //       .text(d.value);
+  //   })
+  //   .on('mouseout', (e, d) => {
+  //     const current = d3.select(`#point-${d.year}`);
+  //     current
+  //       .transition()
+  //       .duration(200)
+  //       .attr('r', 3);
+  //     const tooltip = d3.select('#bottom-tooltip');
+  //     tooltip.style('visibility', 'hidden');
+  //   });
   drawDrag(minYear, maxYear, timeScale(minYear));
 }
 
@@ -90,8 +90,8 @@ function drawDrag(minYear, maxYear, offset) {
   const bottomContainer = d3.select('#bottom-container');
   const xMin = offset;
   const xMax = outerMargin + windowWidth * 0.9;
-  const yDate = windowHeight * 0.22;
-  const yTime = windowHeight * 0.27;
+  const yDate = windowHeight * 0.02;
+  const yTime = windowHeight * 0.07;
   let slideBlock;
   function getX(rx) {
     if (rx < xMin) {

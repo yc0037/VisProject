@@ -25,7 +25,10 @@ let numStations;
 let disStations;
 let label;
 let pathStations;
+let loadingMask;
 let detailMode = false;
+
+const maskTime = 200;
 
 export async function initMain() {
   geoFeature = await fetch(beijingMap)
@@ -38,6 +41,7 @@ export async function initMain() {
   offset = geoScale / 200;
   geopath = d3.geoPath(geoprojection);
   mainSvg = d3.select('#main').append('svg');
+  createLoadingMask();
   map = mainSvg
     .style('width', '100%')
     .style('height', '100%')
@@ -73,6 +77,34 @@ export async function initMain() {
   });
   mainSvg.call(zoom);
   drawLegend();
+}
+
+function createLoadingMask() {
+  loadingMask = d3.select('#main')
+                  .append('div')
+                    .attr('id', 'loading-mask');
+  loadingMask.append('img')
+                .classed('loading', true)
+                .attr('src', '../assets/loading.svg');
+  loadingMask.append('div')
+                .text('加载中...')
+                .style('user-select', 'none');
+}
+
+function hideLoadingMask() {
+  console.log('hide');
+  loadingMask.transition().duration(maskTime)
+    .style('opacity', 0);
+  setTimeout(() => {
+    loadingMask.style('display', 'none');
+  }, maskTime + 40);
+}
+
+function showLoadingMask() {
+  console.log('show');
+  loadingMask.style('display', 'flex');
+  loadingMask.transition().duration(maskTime)
+    .style('opacity', 1);
 }
 
 async function drawSubway() {
@@ -168,15 +200,25 @@ async function drawSubway() {
           .style('visibility', 'hidden');
       })
       .on('click', function(e, d) {
-        generateHeatMap_Station(d.id, d.geometry.coordinates);
-        detailMode = true;
-        currentNode = d3.select(`#${d.properties.name}`);
-        currentNode.attr('stroke', '#000000')
-          .attr('stroke-width', 1);
-        g.selectAll('.fake-point')
-          .attr('d', geopath.pointRadius(1.3 * geoScale / 40000));
+        showLoadingMask();
+        setTimeout(() => {
+          generateHeatMap_Station(d.id, d.geometry.coordinates);
+          detailMode = true;
+          if (currentNode) {
+            currentNode
+              .attr('stroke', '#333333')
+              .attr('stroke-width', 0.2);
+          }
+          currentNode = d3.select(`#${d.properties.name}`);
+          currentNode
+            .attr('stroke', '#000000')
+            .attr('stroke-width', 1);
+          g.selectAll('.fake-point')
+            .attr('d', geopath.pointRadius(1.3 * geoScale / 40000));
+          setTimeout(() => hideLoadingMask(), maskTime);
+        }, maskTime);
       });
- 
+    hideLoadingMask();
     console.log('和平门到宣武门: ', directDistance(116.384209, 39.900098, 116.374314, 39.899765, 'Euclidean')); // 837m
     console.log('西单到宣武门: ', directDistance(116.374072, 39.907383, 116.374314, 39.899765, 'Euclidean')); // 828m
 }
@@ -264,6 +306,7 @@ function findPath(start, end) {
 }
 
 function generateHeatMap_Station(id, center, delta = [0.003, 0.002335], maxDis = 0.6) {
+
   let [centerX, centerY] = center;
   let [deltaX, deltaY] = delta;
   let points = [];
