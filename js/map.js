@@ -13,7 +13,7 @@ const beijingMap = './data/110000_full.json';
 
 let currentScale = 1;
 let currentTranslate = d3.zoomIdentity;
-let currentNode;
+let currentStation;
 let mainSvg;
 let g;
 let map;
@@ -28,6 +28,7 @@ let pathStations;
 let loadingMask;
 let timeData;
 let detailMode = false;
+let adjStation;
 const maskTime = 200;
 
 export async function initMain() {
@@ -58,8 +59,38 @@ export async function initMain() {
       .attr('stroke-width', 0.2)
       .attr('id', 'border-path')
       .on("click", (e, d) => {
-        normalMode();
-        // generateHeatMap_Anywhere(ClientToCoordinate(e.clientX, e.clientY));
+        if (detailMode) {
+          normalMode();
+        }
+        else {
+          showLoadingMask();
+          setTimeout(() => {
+            let [lat, lon] = ClientToCoordinate(e.clientX, e.clientY);
+            generateHeatMap('notStation', [lat, lon]);
+            detailMode = true;
+            if (currentStation) {
+              currentStation
+                .attr('stroke', '#333333')
+                .attr('stroke-width', 0.2);
+            }
+            d3.select('#start-point').remove();
+            let startPoint = utils.getPointJson();
+            startPoint.geometry.coordinates = [lat, lon];
+            g.append('path')
+              .datum(startPoint)
+              .attr('id', 'start-point')
+              .attr('fill', '#ffffff')
+              .attr('stroke', '#000000')
+              .attr('transform', `translate(0, -${offset})`)
+              .attr('d', geopath.pointRadius(1.3 * geoScale / 40000));
+            g.selectAll('.fake-point')
+              .attr('d', geopath.pointRadius(1.3 * geoScale / 40000));
+            setTimeout(() => {
+              hideLoadingMask();
+              setTimeout(() => showHeatPoint(), maskTime + 4);
+            }, maskTime);
+          }, maskTime);
+        }
       });
   drawSubway();
   const zoom = d3.zoom().on('zoom', e => {
@@ -220,15 +251,16 @@ async function drawSubway() {
       .on('click', function(e, d) {
         showLoadingMask();
         setTimeout(() => {
-          generateHeatMap_Station(d.id, d.geometry.coordinates);
+          generateHeatMap(d.id, d.geometry.coordinates);
           detailMode = true;
-          if (currentNode) {
-            currentNode
+          if (currentStation) {
+            currentStation
               .attr('stroke', '#333333')
               .attr('stroke-width', 0.2);
           }
-          currentNode = d3.select(`#${d.properties.name}`);
-          currentNode
+          d3.select('#start-point').remove();
+          currentStation = d3.select(`#${d.properties.name}`);
+          currentStation
             .attr('stroke', '#000000')
             .attr('stroke-width', 1);
           g.selectAll('.fake-point')
@@ -283,6 +315,7 @@ function calcDistForStations(links) {
   pathStations = new Array(); // 记录路径信息，path[i][j]表示i到j的最短路上的第二个点
   for (let i = 0; i < numStations; i++) {
     dis[i] = new Array();
+    dis[i][i] = 0;
     label[i] = new Array();
     pathStations[i] = new Array();
   }
@@ -383,6 +416,13 @@ function calcDistForStations(links) {
               pathStations[j][i] = pathStations[j][k];
             }
           }
+  adjStation = new Array();
+  for (let i = 0; i < numStations; i++) {
+    adjStation[i] = new Array();
+    for (let j = 0; j < numStations; j++) {
+      adjStation[i][j] = (pathStations[i][j] == j);
+    }
+  }
   return dis;
 }
 
@@ -396,10 +436,46 @@ function findPath(start, end) {
   return res;
 }
 
-function generateHeatMap_Station(id, center, delta = [0.003, 0.002335], maxDis = 0.6) {
-
-  let [centerX, centerY] = center;
+function generateHeatMap(stationId, center, delta = [0.003, 0.002335], maxDis = 0.6) {
+  let [X, Y] = center;
   let [deltaX, deltaY] = delta;
+
+  let idList = new Array();
+  let getOnDis = new Array();
+  if (stationId == 'notStation') {
+    // 找离起点最近的几个地铁站，记在idList里
+    let nearFlag = new Array();
+    for (let k = 0; k < numStations; k++) {
+      let [kx, ky] = stations[k].geometry.coordinates;
+      for (let i = 0; i < numStations; i++) {
+        let [ix, iy] = stations[i].geometry.coordinates;
+        for (let j = 0; j < numStations; j++)
+          if (adjStation[i][j]) {
+            let [jx, jy] = stations[j].geometry.coordinates;
+            let tmp1 = (ix - X) * (ky - Y) - (kx - X) * (iy - Y);
+            let tmp2 = (jx - X) * (ky - Y) - (kx - X) * (jy - Y);
+            let tmp3 = (kx - ix) * (jy - iy) - (jx - ix) * (ky - iy);
+            let tmp4 = (X - ix) * (jy - iy) - (jx - ix) * (Y - iy);
+            if (tmp1 * tmp2 < 0 && tmp3 * tmp4 < 0) {
+              nearFlag[k] = -1;
+              break;
+            }
+          }
+        if (nearFlag[k] == -1) break;
+      }
+    }
+    for (let i = 0; i < numStations; i++)
+      if (nearFlag[i] != -1) {
+        idList.push(i);
+        let [ix, iy] = stations[i].geometry.coordinates;
+        getOnDis.push(directDistance(X, Y, ix, iy, 'Euclidean') / 5);
+      }
+  }
+  else {
+    idList.push(stationId);
+    getOnDis.push(0);
+  }
+
   let points = [];
 
   let flag = true;
@@ -413,12 +489,21 @@ function generateHeatMap_Station(id, center, delta = [0.003, 0.002335], maxDis =
           if (i != 0 || k != 1)
             for (let l = -1; l <= 1; l = l + 2)
               if (j != 0 || l != 1) {
-                let [dis, getOffStation] = actualDistance_StationToAnywhere(id, centerX + k * i * deltaX, centerY + l * j * deltaY);
+                let dx = X + k * i * deltaX;
+                let dy = Y + l * j * deltaY;
+                let [dis, getOnStation, getOffStation] = actualMinDistance(idList, getOnDis, dx, dy);
+                let walkDis = directDistance(X, Y, dx, dy, 'Manhattan') / 5;
+                if (walkDis < dis) {
+                  dis = walkDis;
+                  getOnStation = null;
+                  getOffStation = null;
+                }
                 if (dis <= maxDis) {
                   let point = utils.getPointJson();
-                  point.geometry.coordinates = [centerX + k * i * deltaX, centerY + l * j * deltaY];
+                  point.geometry.coordinates = [dx, dy];
                   point.colorIndex = dis / maxDis;
-                  point.nearest = getOffStation;
+                  point.getOn = getOnStation;
+                  point.getOff = getOffStation;
                   points.push(point);
                   flag = true;
                 }
@@ -447,34 +532,71 @@ function generateHeatMap_Station(id, center, delta = [0.003, 0.002335], maxDis =
       .style('visibility', 'hidden')
     .on('mouseover', function(e, d) {
       if (currentDestination) {
+        // undo previous animation
         currentDestination.attr('fill', pointColorInterpolate(currentD.colorIndex))
           .attr('stroke', 'none')
           .lower();
         map.lower();
+        d3.select('#getOn-line').remove();
+        d3.select('#getOff-line').remove();
         d3.select('#walk-line').remove();
       }
       currentDestination = d3.select(this);
       currentD = d;
 
-      let path = findPath(id, d.nearest.id);
-      g.selectAll('.path-line')
-        .data(path)
-        .join('line')
-          .attr('class', 'path-line')
-          .attr('x1', d => geoprojection(stations[d[0]].geometry.coordinates)[0])
-          .attr('y1', d => geoprojection(stations[d[0]].geometry.coordinates)[1])
-          .attr('x2', d => geoprojection(stations[d[1]].geometry.coordinates)[0])
-          .attr('y2', d => geoprojection(stations[d[1]].geometry.coordinates)[1])
-          .attr('transform', `translate(0, -${offset})`)
-          .attr('stroke', d => d3.color(utils.colors[links[label[d[0]][d[1]]].properties.name]).brighter().toString())
-          .attr('stroke-width', 2.5)
-          .attr('pointer-events', 'none')
+      if (d.getOn) {
+        // 需要乘坐地铁的情况
+        let path = findPath(d.getOn.id, d.getOff.id);
+        g.selectAll('.path-line')
+          .data(path)
+          .join('line')
+            .attr('class', 'path-line')
+            .attr('x1', d => geoprojection(stations[d[0]].geometry.coordinates)[0])
+            .attr('y1', d => geoprojection(stations[d[0]].geometry.coordinates)[1])
+            .attr('x2', d => geoprojection(stations[d[1]].geometry.coordinates)[0])
+            .attr('y2', d => geoprojection(stations[d[1]].geometry.coordinates)[1])
+            .attr('transform', `translate(0, -${offset})`)
+            .attr('stroke', d => d3.color(utils.colors[links[label[d[0]][d[1]]].properties.name]).brighter().toString())
+            .attr('stroke-width', 2.5)
+            .attr('pointer-events', 'none')
+            .raise();
+        g.append('line')
+          .datum(d)
+            .attr('id', 'getOn-line')
+            .attr('x1', geoprojection(center)[0])
+            .attr('y1', geoprojection(center)[1])
+            .attr('x2', geoprojection(d.getOn.geometry.coordinates)[0])
+            .attr('y2', geoprojection(d.getOn.geometry.coordinates)[1])
+            .attr('transform', `translate(0, -${offset})`)
+            .attr('stroke', '#000000')
+            .attr('stroke-width', 2.5)
+            .attr('pointer-events', 'none')
+            .raise();
+        g.append('line')
+          .datum(d)
+            .attr('id', 'getOff-line')
+            .attr('x1', geoprojection(d.getOff.geometry.coordinates)[0])
+            .attr('y1', geoprojection(d.getOff.geometry.coordinates)[1])
+            .attr('x2', geoprojection(d.geometry.coordinates)[0])
+            .attr('y2', geoprojection(d.geometry.coordinates)[1])
+            .attr('transform', `translate(0, -${offset})`)
+            .attr('stroke', '#000000')
+            .attr('stroke-width', 2.5)
+            .attr('pointer-events', 'none')
+            .raise();
+        d3.select(this)
+          .attr('fill', '#ffffff')
+          .attr('stroke', '#000000')
           .raise();
-      g.append('line')
-        .datum(d)
+        if (currentStation) currentStation.raise();
+      }
+      else {
+        // 直接走到的情况
+        g.append('line')
+         .datum(d)
           .attr('id', 'walk-line')
-          .attr('x1', geoprojection(d.nearest.geometry.coordinates)[0])
-          .attr('y1', geoprojection(d.nearest.geometry.coordinates)[1])
+          .attr('x1', geoprojection(center)[0])
+          .attr('y1', geoprojection(center)[1])
           .attr('x2', geoprojection(d.geometry.coordinates)[0])
           .attr('y2', geoprojection(d.geometry.coordinates)[1])
           .attr('transform', `translate(0, -${offset})`)
@@ -482,11 +604,11 @@ function generateHeatMap_Station(id, center, delta = [0.003, 0.002335], maxDis =
           .attr('stroke-width', 2.5)
           .attr('pointer-events', 'none')
           .raise();
-      d3.select(this)
-        .attr('fill', '#ffffff')
-        .attr('stroke', '#000000')
-        .raise();
-      currentNode.raise();
+        d3.select(this)
+          .attr('fill', '#ffffff')
+          .attr('stroke', '#000000')
+          .raise();
+      }
     })
     .on('click', normalMode);
 
@@ -494,8 +616,8 @@ function generateHeatMap_Station(id, center, delta = [0.003, 0.002335], maxDis =
     .data(points)
     .join('line')
       .attr('class', 'heat-line')
-      .attr('x1', d => geoprojection(d.nearest.geometry.coordinates)[0])
-      .attr('y1', d => geoprojection(d.nearest.geometry.coordinates)[1])
+      .attr('x1', d => d.getOff ? geoprojection(d.getOff.geometry.coordinates)[0] : geoprojection(center)[0])
+      .attr('y1', d => d.getOff ? geoprojection(d.getOff.geometry.coordinates)[1] : geoprojection(center)[1])
       .attr('x2', d => geoprojection(d.geometry.coordinates)[0])
       .attr('y2', d => geoprojection(d.geometry.coordinates)[1])
       .attr('transform', `translate(0, -${offset})`)
@@ -507,14 +629,16 @@ function generateHeatMap_Station(id, center, delta = [0.003, 0.002335], maxDis =
   arrangeOrder();
 }
 
-function generateHeatMap_Anywhere(center, delta = [0.003, 0.002335], maxDis = 0.6) {
-    //TODO
-}
-
 function normalMode() {
   detailMode = false;
-  currentNode.attr('stroke', '#333333')
-    .attr('stroke-width', 0.2);
+  if (currentStation) {
+    currentStation.attr('stroke', '#333333')
+      .attr('stroke-width', 0.2);
+    currentStation = null;
+  }
+  d3.select('#start-point').remove();
+  g.select('#getOn-line').remove();
+  g.select('#getOff-line').remove();
   g.select('#walk-line').remove();
   g.selectAll('.heat-point').remove();
   g.selectAll('.path-line').remove();
@@ -540,21 +664,28 @@ function directDistance(lat1, lon1, lat2, lon2, type) {
   }
 }
 
-function actualDistance_StationToAnywhere(id, lat2, lon2) {
+function actualMinDistance(idList, getOnDis, lat2, lon2) {
+  // 给定起始地点附近的地铁站idList、起始地点到附近地铁站的时间getOnDis、目标地点[lat2, lon2]，求最短时间
   let minDis = 100000;
+  let getOnStation;
   let getOffStation;
   for (let i = 0; i < numStations; i++) {
     let [lati, loni] = stations[i].geometry.coordinates;
-    let tmp = disStations[id][i] + directDistance(lati, loni, lat2, lon2, 'Manhattan') / 5;
-    if (tmp < minDis) {
-      minDis = tmp;
-      getOffStation = stations[i];
+    let getOffDis = directDistance(lati, loni, lat2, lon2, 'Manhattan') / 5;
+    for (let j = 0, jt = idList.length; j < jt; j++) {
+      // 先走到地铁站idList[j]，乘地铁到地铁站i，然后走到终点
+      let tmp = getOnDis[j] + disStations[idList[j]][i] + getOffDis;
+      if (tmp < minDis) {
+        minDis = tmp;
+        getOnStation = stations[idList[j]];
+        getOffStation = stations[i];
+      }
     }
   }
-  return [minDis, getOffStation];
+  return [minDis, getOnStation, getOffStation];
 }
 
 function ClientToCoordinate(ClientX, ClientY) {
   let titleMargin = 0.1 * document.body.clientHeight;
-  return geoprojection.invert([(e.clientX - currentTranslate.x) / currentScale, (e.clientY - currentTranslate.y - titleMargin) / currentScale + offset]);
+  return geoprojection.invert([(ClientX - currentTranslate.x) / currentScale, (ClientY - currentTranslate.y - titleMargin) / currentScale + offset]);
 }
