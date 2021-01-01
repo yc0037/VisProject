@@ -429,7 +429,7 @@ function generateHeatMap(station, center, delta = [0.003, 0.002335], maxDis = 0.
       .attr('d', geopath.pointRadius(1.3 * geoScale / 40000));
   }
   else {
-    currentStation = d3.select(`#${station.name}`);
+    currentStation = d3.select(`#${station.properties.name}`);
     currentStation
       .attr('stroke', '#000000')
       .attr('stroke-width', 1);
@@ -651,6 +651,7 @@ function arrangeOrder() {
   g.selectAll('.heat-point').raise();
   g.selectAll('.path-link').raise();
   g.selectAll('line').raise();
+  g.select('#start-point').raise();
   g.selectAll('.path-point').raise();
   g.selectAll('.fake-point').raise();
 }
