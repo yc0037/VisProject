@@ -29,6 +29,7 @@ let loadingMask;
 let timeData;
 let detailMode = false;
 let adjStation;
+let legends;
 const maskTime = 200;
 
 export async function initMain() {
@@ -67,24 +68,6 @@ export async function initMain() {
           setTimeout(() => {
             let [lat, lon] = ClientToCoordinate(e.clientX, e.clientY);
             generateHeatMap('notStation', [lat, lon]);
-            detailMode = true;
-            if (currentStation) {
-              currentStation
-                .attr('stroke', '#333333')
-                .attr('stroke-width', 0.2);
-            }
-            d3.select('#start-point').remove();
-            let startPoint = utils.getPointJson();
-            startPoint.geometry.coordinates = [lat, lon];
-            g.append('path')
-              .datum(startPoint)
-              .attr('id', 'start-point')
-              .attr('fill', '#ffffff')
-              .attr('stroke', '#000000')
-              .attr('transform', `translate(0, -${offset})`)
-              .attr('d', geopath.pointRadius(1.3 * geoScale / 40000));
-            g.selectAll('.fake-point')
-              .attr('d', geopath.pointRadius(1.3 * geoScale / 40000));
             setTimeout(() => {
               hideLoadingMask();
               setTimeout(() => showHeatPoint(), maskTime + 4);
@@ -251,20 +234,7 @@ async function drawSubway() {
       .on('click', function(e, d) {
         showLoadingMask();
         setTimeout(() => {
-          generateHeatMap(d.id, d.geometry.coordinates);
-          detailMode = true;
-          if (currentStation) {
-            currentStation
-              .attr('stroke', '#333333')
-              .attr('stroke-width', 0.2);
-          }
-          d3.select('#start-point').remove();
-          currentStation = d3.select(`#${d.properties.name}`);
-          currentStation
-            .attr('stroke', '#000000')
-            .attr('stroke-width', 1);
-          g.selectAll('.fake-point')
-            .attr('d', geopath.pointRadius(1.3 * geoScale / 40000));
+          generateHeatMap(d, d.geometry.coordinates);
           setTimeout(() => {
             hideLoadingMask();
             setTimeout(() => showHeatPoint(), maskTime + 4);
@@ -277,7 +247,7 @@ async function drawSubway() {
 }
 
 function drawLegend() {
-  const legends = d3.select('#main')
+  legends = d3.select('#main')
     .append('div').attr('id', 'map-legend-container');
   const colors = utils.colors;
   for (const key in colors) {
@@ -436,13 +406,42 @@ function findPath(start, end) {
   return res;
 }
 
-function generateHeatMap(stationId, center, delta = [0.003, 0.002335], maxDis = 0.6) {
+function generateHeatMap(station, center, delta = [0.003, 0.002335], maxDis = 0.6) {
+  detailMode = true;
+  if (currentStation) {
+    currentStation
+      .attr('stroke', '#333333')
+      .attr('stroke-width', 0.2);
+    currentStation = null;
+  }
+  d3.select('#start-point').remove();
+  g.selectAll('.fake-point')
+    .attr('d', geopath.pointRadius(1.3 * geoScale / 40000));
+  if (station == 'notStation') {
+    let startPoint = utils.getPointJson();
+    startPoint.geometry.coordinates = center;
+    g.append('path')
+      .datum(startPoint)
+      .attr('id', 'start-point')
+      .attr('fill', '#ffffff')
+      .attr('stroke', '#000000')
+      .attr('transform', `translate(0, -${offset})`)
+      .attr('d', geopath.pointRadius(1.3 * geoScale / 40000));
+  }
+  else {
+    currentStation = d3.select(`#${station.name}`);
+    currentStation
+      .attr('stroke', '#000000')
+      .attr('stroke-width', 1);
+  }
+  legends.style("visibility", "hidden");
+
   let [X, Y] = center;
   let [deltaX, deltaY] = delta;
 
   let idList = new Array();
   let getOnDis = new Array();
-  if (stationId == 'notStation') {
+  if (station == 'notStation') {
     // 找离起点最近的几个地铁站，记在idList里
     let nearFlag = new Array();
     for (let k = 0; k < numStations; k++) {
@@ -472,7 +471,7 @@ function generateHeatMap(stationId, center, delta = [0.003, 0.002335], maxDis = 
       }
   }
   else {
-    idList.push(stationId);
+    idList.push(station.id);
     getOnDis.push(0);
   }
 
@@ -645,6 +644,7 @@ function normalMode() {
   g.selectAll('.heat-line').remove();
   g.selectAll('.fake-point')
     .attr('d', geopath.pointRadius(Math.max(1.3, 4 / Math.sqrt(currentScale)) * geoScale / 40000));
+  legends.style("visibility", "visible");
 }
 
 function arrangeOrder() {
