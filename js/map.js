@@ -35,7 +35,7 @@ const maskTime = 200;
 export async function initMain() {
   geoFeature = await fetch(beijingMap)
     .then(response => response.json());
-  timeData = await fetch('../data/subwaytime.json')
+  timeData = await fetch('./data/subwaytime.json')
     .then(response => response.json());
   geoprojection = d3.geoTransverseMercator().angle(231)
     .fitExtent([[-mainWidth, -mainHeight * 3.5], 
@@ -101,7 +101,7 @@ function createLoadingMask() {
                     .attr('id', 'loading-mask');
   loadingMask.append('img')
                 .classed('loading', true)
-                .attr('src', '../assets/loading.svg');
+                .attr('src', './assets/loading.svg');
   loadingMask.append('div')
                 .text('加载中...')
                 .style('user-select', 'none');
@@ -143,14 +143,29 @@ async function drawSubway() {
   stations = subwayLines.map(v => v.st.map(vv => {
     let point = utils.getPointJson();
     point.properties.name = vv.name;
+    point.properties.line.push(v.name); //站点所属线路信息
     point.geometry.coordinates = [+vv.x, +vv.y];
     return point;
   }));
   stations = _.flattenDeep(stations);
+  numStations = stations.length;
+
+  //换乘站点地铁线路合并
+  for (let i = 0; i < numStations; i++){
+    for (let j = i+1; j < numStations; j++){
+      if (_.isEqual(stations[i].geometry.coordinates,stations[j].geometry.coordinates)&& i!=j){
+        let merge = stations[i].properties.line.concat(stations[j].properties.line);
+        stations[i].properties.line = merge;
+        stations[j].properties.line = merge;
+      }
+    }
+  }
+  // 去除重复地铁站
   stations = _.uniqWith(stations, _.isEqual);
+
   stationMap = new Map();
   numStations = stations.length;
-  for (let i = 0; i < numStations; i++){
+  for(let i=0;i<numStations;i++){
     stations[i].id = i;
     stationMap.set(stations[i].properties.name, i);
   }
@@ -208,7 +223,7 @@ async function drawSubway() {
           .attr('d', geopath.pointRadius(2 * geoScale / 40000));
         d3.select(`#${d.properties.name}-fake`)
           .attr('d', geopath.pointRadius(Math.max(2, 4 / Math.sqrt(currentScale)) * geoScale / 40000));
-        let content = `name: ${d.properties.name}, id: ${d.id}`;
+        let content = `name: ${d.properties.name}, id: ${d.id}, line:${d.properties.line}`;
         d3.select('#main-tooltip')
           .html(content)
           .style('top', `${e.clientY + 3}px`)
