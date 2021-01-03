@@ -1,7 +1,7 @@
 export function getPointJson() {
   return ({
     "type": "Feature",
-    "properties": {},
+    "properties": {'line':new Array()},
     "geometry": {
       "type": "Point",
       "coordinates": []
