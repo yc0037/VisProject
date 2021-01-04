@@ -12,7 +12,7 @@ export async function getSubway() {
         name: v.kn,
         isLoop: v.lo === "1",
       })));
-  console.log(subwayLines);
+  console.log("subwayLines",subwayLines);
   return subwayLines;
 }
 
@@ -56,4 +56,13 @@ export async function getStationCode() {
         })
         console.log(code2Station);
   console.log(JSON.stringify(stations));
+}
+
+export async function getDest(){
+    const dests =
+        await fetch('../data/destination.json')
+            .then(response => response.json());
+
+    console.log("dests",dests);
+    return dests;
 }
