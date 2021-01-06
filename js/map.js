@@ -482,7 +482,7 @@ function generateHeatMap(station, center, delta = [0.003, 0.002335], maxDis = 0.
       if (nearFlag[i] != -1) {
         idList.push(i);
         let [ix, iy] = stations[i].geometry.coordinates;
-        getOnDis.push(directDistance(X, Y, ix, iy, 'Euclidean') / 5);
+        getOnDis.push(directDistance(X, Y, ix, iy, 'Manhattan') / 5);
       }
   }
   else {
@@ -507,7 +507,7 @@ function generateHeatMap(station, center, delta = [0.003, 0.002335], maxDis = 0.
                 let dy = Y + l * j * deltaY;
                 let [dis, getOnStation, getOffStation] = actualMinDistance(idList, getOnDis, dx, dy);
                 let walkDis = directDistance(X, Y, dx, dy, 'Manhattan') / 5;
-                if (walkDis < dis) {
+                if (walkDis <= dis) {
                   dis = walkDis;
                   getOnStation = null;
                   getOffStation = null;
