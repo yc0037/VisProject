@@ -1,4 +1,7 @@
 import * as utils from './utils.js';
+import { getDest } from "./data.js";
+import {generateHeatMap, hideLoadingMask, showHeatPoint, showLoadingMask} from "./map.js";
+const maskTime = 200;
 
 const { mainHeight, sideWidth } = utils;
 
@@ -20,7 +23,7 @@ let g = sideSvg.append('g').attr('id', 'matrix');
 
 export function initSide() {
   const cellWidth = 8;
-  const topOffset = (mainHeight - cellWidth * distMatrix.length - 40) / 2;
+  const topOffset = (mainHeight - cellWidth * distMatrix.length + 100) / 2;
   const leftOffset = (sideWidth - cellWidth * distMatrix.length) / 2;
   function fover(e) {
     let [ , ii, jj] = e.target.id.split('-');
@@ -105,6 +108,7 @@ export function initSide() {
           .attr('y', topOffset + distMatrix.length * cellWidth + 55)
           .attr('font-size', 12)
           .text('10')
+  drawDest(cellWidth);
 }
 
 function _updateSide() {
@@ -118,3 +122,87 @@ function _updateSide() {
 }
 
 export const updateSide = _.debounce(_updateSide, 50);
+
+
+
+export async function drawDest(cellWidth){
+  const subwayLines = await getDest();
+  const dest_class = Object.keys(subwayLines);
+  const destHeight = (mainHeight - cellWidth * distMatrix.length + 100) / 2;
+  const destWidth = sideWidth;
+  let g2 = sideSvg.append('g').attr('id', 'destinations');
+  let g3;
+  let iWidth = destWidth / (dest_class.length + 1);
+  // 写一级类别
+  for(let i = 0; i < dest_class.length; i++){
+    const dest1 = g2.append('text')
+        .attr('id',dest_class[i])
+        .attr('x', iWidth * (i + 1))
+        .attr('y', 20)
+        .attr('font-size', 12)
+        .text(dest_class[i])
+        .style('background-color', '#A0C53E');
+    dest1.on('click', e => {
+      d3.select(`#${dest_class[i]}`)
+          .style('background-color', '#dddddddd');
+      //先删掉之前的二级类目
+      var thisNode=document.getElementById("second_class_dest");
+      console.log(thisNode);
+      if(thisNode != null){
+        thisNode.remove();
+      }
+      // 显示二级类目
+      let subwayLines_2 = subwayLines[dest_class[i]];
+      console.log(subwayLines_2);
+      //得计算一下长度
+      let total_length = 0;
+      let total_char = 36;
+      for(let j = 0; j < subwayLines_2.length; j++){
+          //console.log(subwayLines_2[j]['name'].length);
+          total_length += subwayLines_2[j]['name'].length;
+      }
+      let gap = (total_char - total_length) / (subwayLines_2.length + 1);
+      console.log(gap);
+
+      let jWidth = destWidth / total_char;
+      console.log(jWidth);
+      g3 = g2.append('g').attr('id', 'second_class_dest');
+      //测试代码
+      // g3.append('text')
+      //     .attr('class','second_class_dest')
+      //     .attr('x', 0)
+      //     .attr('y', 50)
+      //     .attr('font-size', 12)
+      //     .text("这是一段测试代码这是一段测试代码这是一段测试代码这是一段测试代码这是一段测试代码这是一段测试代码这是一段测试代码");
+
+
+      let accumulate_width = 0;
+      for(let j = 0; j < subwayLines_2.length; j++){
+        console.log(jWidth * (accumulate_width + 1));
+        let dest2 = g3.append('text')
+            .attr('class','second_class_dest')
+            .attr('id',subwayLines_2[j]['name'])
+            .attr('x', jWidth * (accumulate_width + gap * (j+1) - 1))
+            .attr('y', 50)
+            .attr('font-size', 12)
+            .text(subwayLines_2[j]['name']);
+        accumulate_width += subwayLines_2[j]['name'].length + 1;
+        //图上标记点
+        dest2.on('click', e =>{
+          showLoadingMask();
+          setTimeout(() => {
+            let lat = subwayLines_2[j]['x'];
+            let lon = subwayLines_2[j]['y'];
+            generateHeatMap('notStation', [lat, lon]);
+            setTimeout(() => {
+              hideLoadingMask();
+              setTimeout(() => showHeatPoint(), maskTime + 4);
+            }, maskTime);
+          }, maskTime);
+        });
+      }
+    });
+  }
+
+
+}

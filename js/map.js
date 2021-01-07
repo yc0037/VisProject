@@ -107,7 +107,7 @@ function createLoadingMask() {
                 .style('user-select', 'none');
 }
 
-function hideLoadingMask() {
+export function hideLoadingMask() {
   console.log('hide');
   loadingMask.transition().duration(maskTime)
     .style('opacity', 0);
@@ -116,7 +116,7 @@ function hideLoadingMask() {
   }, maskTime + 40);
 }
 
-function showLoadingMask() {
+export function showLoadingMask() {
   console.log('show');
   loadingMask.style('display', 'flex');
   loadingMask.transition().duration(maskTime)
@@ -124,7 +124,7 @@ function showLoadingMask() {
 }
 
 const appearTimeInterpolate = d3.interpolate(10, 350);
-function showHeatPoint() {
+export function showHeatPoint() {
   g.selectAll('.heat-point').each((d, i, nodes) => {
     setTimeout(() => {
       d3.select(nodes[i])
@@ -290,7 +290,8 @@ function drawLegend() {
         .attr('stroke', colors[key])
         .attr('stroke-width', 1.5)
         .lower();
-    })
+    });
+    legend.on('click')
   }
 }
 
@@ -421,7 +422,7 @@ function findPath(start, end) {
   return res;
 }
 
-function generateHeatMap(station, center, delta = [0.003, 0.002335], maxDis = 0.6) {
+export function generateHeatMap(station, center, delta = [0.003, 0.002335], maxDis = 0.6) {
   detailMode = true;
   if (currentStation) {
     currentStation
@@ -705,3 +706,6 @@ function ClientToCoordinate(ClientX, ClientY) {
   let titleMargin = 0.1 * document.body.clientHeight;
   return geoprojection.invert([(ClientX - currentTranslate.x) / currentScale, (ClientY - currentTranslate.y - titleMargin) / currentScale + offset]);
 }
+
+let currentYear;
+let current
