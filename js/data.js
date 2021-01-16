@@ -1,6 +1,6 @@
 export async function getSubway() {
   const subwayLines = 
-    await fetch('../data/subway.json')
+    await fetch('./data/subway.json')
       .then(response => response.json())
       .then(result => result.l.map(v => ({
         st: v.st.map(vv => ({
@@ -16,11 +16,26 @@ export async function getSubway() {
   return subwayLines;
 }
 
+// 暂时不用
+export async function getStationOpen() {
+    const stationOpentimes =
+        await fetch('./data/subwayopen.json')
+            .then(response=>response.json());
+    for(let station in stationOpentimes)
+        for (let line in stationOpentimes[station]){
+            let year = stationOpentimes[station][line].split('.')[0];
+            let month = stationOpentimes[station][line].split('.')[1];
+            stationOpentimes[station][line]=parseInt(year)+(month-1)/12;
+        }
+    console.log('open',stationOpentimes);
+  return stationOpentimes;
+}
+
 export async function getStationCode() {
   const code2Station = {};
   const code2Line = {};
   const stations = {};
-  await fetch('../data/subway.json')
+  await fetch('./data/subway.json')
         .then(response => response.json())
         .then(result => {
           const lines = result.l;
@@ -31,7 +46,7 @@ export async function getStationCode() {
             }
           }
         });
-  await fetch('../data/subwayinfo.json')
+  await fetch('./data/subwayinfo.json')
         .then(response => response.json())
         .then(result => {
           const lines = result.l;
@@ -60,7 +75,7 @@ export async function getStationCode() {
 
 export async function getDest(){
     const dests =
-        await fetch('../data/destination.json')
+        await fetch('./data/destination.json')
             .then(response => response.json());
 
     console.log("dests",dests);

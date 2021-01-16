@@ -1,4 +1,4 @@
-import { getStationCode, getSubway } from "./data.js";
+import { getStationCode, getSubway,getStationOpen } from "./data.js";
 import * as utils from './utils.js';
 
 const { mainHeight, mainWidth } = utils;
@@ -27,16 +27,36 @@ let label;
 let pathStations;
 let loadingMask;
 let timeData;
+let openData;//地铁开通时间
 let detailMode = false;
 let adjStation;
 let legends;
+let date=2020.83;//当前年月
+let time;     //当前时间
+let isHeatmap;//判断是否现在显示有热力图
 const maskTime = 200;
 
-export async function initMain() {
+export const updateMap = _.debounce(_updateMap,50)
+
+async function _updateMap(_date,_time){
+  if(isHeatmap===true)
+  {
+    normalMode();
+    isHeatmap=false;
+  }
+  date=_date;
+  await initMain(date,time);
+}
+
+export async function initMain(date,time) {
   geoFeature = await fetch(beijingMap)
     .then(response => response.json());
   timeData = await fetch('./data/subwaytime.json')
     .then(response => response.json());
+  console.log('timedata',timeData);
+  openData = await getStationOpen();
+  //console.log('金安桥',openData['金安桥']);
+  console.log('date',date);
   geoprojection = d3.geoTransverseMercator().angle(231)
     .fitExtent([[-mainWidth, -mainHeight * 3.5], 
                 [mainWidth * 2.3, mainHeight * 3.5]], 
@@ -62,6 +82,7 @@ export async function initMain() {
       .on("click", (e, d) => {
         if (detailMode) {
           normalMode();
+          isHeatmap=false;
         }
         else {
           showLoadingMask();
@@ -75,7 +96,7 @@ export async function initMain() {
           }, maskTime);
         }
       });
-  drawSubway();
+  await drawSubway(date,time);
   const zoom = d3.zoom().on('zoom', e => {
     currentScale = e.transform.k;
     currentTranslate = e.transform;
@@ -138,18 +159,39 @@ export function showHeatPoint() {
   }, 355);
 }
 
-async function drawSubway() {
-  const subwayLines = await getSubway();
-  stations = subwayLines.map(v => v.st.map(vv => {
-    let point = utils.getPointJson();
-    point.properties.name = vv.name;
-    point.properties.line.push(v.name); //站点所属线路信息
-    point.geometry.coordinates = [+vv.x, +vv.y];
-    return point;
-  }));
+async function lineStationPrepare(subwayLines,date,time){
+
+  stations = subwayLines.map(function(line){
+    let tempStations=new Array();
+    for(let i=0;i<line.st.length;i++){
+      let station = line.st[i];
+      let open = openData[station.name][line.name];
+      if(open<date){   //在当前选择日期时已经开通
+        let point = utils.getPointJson();
+        point.properties.name = station.name;
+        point.properties.line.push(line.name); //站点所属线路信息
+        point.properties.open = openData[station.name];//加上车站开通时间
+        point.geometry.coordinates = [+station.x, +station.y];
+        tempStations.push(point);
+      }
+    }
+    return tempStations;
+  });
+  console.log('fake',stations);
+
+  // stations = subwayLines.map(v => v.st.map(vv => {
+  //   let point = utils.getPointJson();
+  //   point.properties.name = vv.name;
+  //   point.properties.line.push(v.name); //站点所属线路信息
+  //   point.properties.open = openData[vv.name];//加上车站开通时间
+  //   point.geometry.coordinates = [+vv.x, +vv.y];
+  //   return point;
+  // }));
+
+  console.log('beforeflatten',stations);
   stations = _.flattenDeep(stations);
   numStations = stations.length;
-
+  console.log('station',stations);
   //换乘站点地铁线路合并
   for (let i = 0; i < numStations; i++){
     for (let j = i+1; j < numStations; j++){
@@ -165,23 +207,60 @@ async function drawSubway() {
 
   stationMap = new Map();
   numStations = stations.length;
+  console.log(numStations);
   for(let i=0;i<numStations;i++){
     stations[i].id = i;
     stationMap.set(stations[i].properties.name, i);
   }
-  links = subwayLines.map(v => {
+  links = [];
+  for(let i=0;i<subwayLines.length;i++){
+    let _line = subwayLines[i];
     let line = utils.getLineJson();
-    line.properties.name = v.name;
-    line.properties.color = utils.colors[v.name];
-    line.geometry.coordinates = v.st.map(vv => [vv.x, vv.y]);
-    line.stations = v.st.map(vv => stationMap.get(vv.name));
-    line.isLoop = v.isLoop;
-    if (v.isLoop) {
-      line.geometry.coordinates.push([v.st[0].x, v.st[0].y]);
-      line.stations.push(stationMap.get(v.st[0].name));
+    line.geometry.coordinates = [];
+    line.stations = [];
+    for(let j=0;j<_line.st.length;j++){
+      let station = _line.st[j];
+      if(openData[station.name][_line.name]<date){
+        line.geometry.coordinates.push([station.x, station.y]);
+        line.stations.push(stationMap.get(station.name));
+      }
     }
-    return line;
-  });
+    if(line.geometry.coordinates.length===0)//去除还未开通地铁线路
+      continue;
+    line.properties.name = _line.name;
+    line.properties.color = utils.colors[_line.name];
+    if (_line.isLoop) {
+      line.firstStation = _line.st[0].name;
+      line.lastStation = _line.st[0].name;
+    }
+    else {
+      line.firstStation=_line.st[0].name;
+      line.lastStation=_line.st[_line.st.length-1].name;
+    }
+    if(_line.name==='地铁八通线')
+      line.lastStation='土桥';
+    if (_line.name==='地铁亦庄线')
+      line.lastStation='次渠';
+    //环线处理
+    line.isLoop = _line.isLoop;
+     // if ((_line.name==='地铁2号线'&&date>=1988) ||(_line.name==='地铁10号线'&&date>2013.3)) {
+     if ((_line.name==='地铁2号线') ||(_line.name==='地铁10号线')) {
+      line.geometry.coordinates.push([_line.st[0].x, _line.st[0].y]);
+      line.stations.push(stationMap.get(_line.st[0].name));
+      //line.isLoop=true;
+    }
+    links.push(line);
+  }
+  console.log('link',links)
+}
+
+async function drawSubway(date,time) {
+
+  //读取地铁站基本信息
+  const subwayLines = await getSubway();
+  //根据当前年月和时间维护numStations,links,stations,stationMap
+  await lineStationPrepare(subwayLines,date,time);
+
   disStations = calcDistForStations(links);
   
   g = d3.select('#main-svg')
@@ -249,6 +328,7 @@ async function drawSubway() {
       .on('click', function(e, d) {
         showLoadingMask();
         setTimeout(() => {
+          //console.log(316,d);
           generateHeatMap(d, d.geometry.coordinates);
           setTimeout(() => {
             hideLoadingMask();
@@ -295,6 +375,7 @@ function drawLegend() {
   }
 }
 
+
 function calcDistForStations(links) {
   let dis = new Array();
   label = new Array(); // 记录地铁线路信息，用于计算换乘时间，label[i][j]表示i到j的最短路上的第一条地铁线路
@@ -314,14 +395,21 @@ function calcDistForStations(links) {
     } else if (lineName === '首都机场线') {
       continue;
     }
-    let firstStation = stations[link.stations[0]].properties.name;
-    let lastStation = stations[link.stations[jt - 1]].properties.name;
+    //console.log('wrong',link);
+    //console.log('wrong',link.stations[0]);
+    //console.log('wrong',stations[link.stations[0]]);
+    // let firstStation = stations[link.stations[0]].properties.name;
+    // let lastStation = stations[link.stations[jt - 1]].properties.name;
+    let firstStation = link.firstStation;
+    let lastStation = link.lastStation;
     for (let j = 0; j < jt - 1; j++) {
       let s = link.stations[j], t = link.stations[(j + 1) % jt];
       const sName = stations[s].properties.name, tName = stations[t].properties.name;
       let sFirst, tFirst;
-
+      //console.log(sName,tName,lineName,firstStation,lastStation);
       if (link.isLoop) {
+        //console.log(j,jt,link.stations[(j + 2) % jt],link.stations);
+        //console.log(sName,tName,lineName,firstStation,lastStation);
         let tNextName = stations[link.stations[(j + 2) % jt]].properties.name;
         if (j === jt - 2)
         tNextName = stations[link.stations[1]].properties.name;
@@ -332,6 +420,7 @@ function calcDistForStations(links) {
           sFirst = timeData[tName][lineName][firstStation][0];
           tFirst = timeData[sName][lineName][firstStation][0];
         } else {
+          //console.log(timeData[sName],'wrong')
           sFirst = timeData[sName][lineName][lastStation][0];
           tFirst = timeData[tName][lineName][lastStation][0];
         }
@@ -354,37 +443,45 @@ function calcDistForStations(links) {
     }
   }
 
-  // 处理首都机场线
-  const t2 = stationMap.get('T2航站楼'),
+    // 处理首都机场线
+    const t2 = stationMap.get('T2航站楼'),
         t3 = stationMap.get('T3航站楼'),
         dzm = stationMap.get('东直门'),
         syq = stationMap.get('三元桥');
-  dis[dzm][syq] = dis[syq][dzm] = 1 / 15;
-  label[dzm][syq] = label[syq][dzm] = 20;
-  pathStations[dzm][syq] = syq;
-  pathStations[syq][dzm] = dzm;
-  dis[syq][t3] = 0.3;
-  label[syq][t3] = 20;
-  pathStations[syq][t3] = t3;
-  dis[t3][t2] = 7 / 30;
-  label[t3][t2] = 20;
-  pathStations[t3][t2] = t2;
-  dis[t2][syq] = 19 / 60;
-  label[t2][syq] = 20;
-  pathStations[t2][syq] = syq;
-  // 几个漏掉的车站
-  const yzhcz = stationMap.get('亦庄火车站');
-  const cq = stationMap.get('次渠');
-  dis[yzhcz][cq] = dis[cq][yzhcz] = 1 / 12;
-  label[yzhcz][cq] = label[cq][yzhcz] = 23;
-  pathStations[yzhcz][cq] = cq;
-  pathStations[cq][yzhcz] = yzhcz;
-  const hz = stationMap.get('花庄');
-  const tq = stationMap.get('土桥');
-  dis[hz][tq] = dis[tq][hz] = 0.1;
-  label[hz][tq] = label[tq][hz] = 16;
-  pathStations[hz][tq] = tq;
-  pathStations[tq][hz] = hz;
+    console.log('t2',t2);
+    if(typeof(t2)!='undefined'&&typeof(t3)!='undefined') {
+      dis[dzm][syq] = dis[syq][dzm] = 1 / 15;
+      label[dzm][syq] = label[syq][dzm] = 20;
+      pathStations[dzm][syq] = syq;
+      pathStations[syq][dzm] = dzm;
+      dis[syq][t3] = 0.3;
+      label[syq][t3] = 20;
+      pathStations[syq][t3] = t3;
+      dis[t3][t2] = 7 / 30;
+      label[t3][t2] = 20;
+      pathStations[t3][t2] = t2;
+      dis[t2][syq] = 19 / 60;
+      label[t2][syq] = 20;
+      pathStations[t2][syq] = syq;
+    }
+    // 几个漏掉的车站
+
+    const yzhcz = stationMap.get('亦庄火车站');
+    const cq = stationMap.get('次渠');
+    if(typeof (yzhcz)!='undefined'){
+      dis[yzhcz][cq] = dis[cq][yzhcz] = 1 / 12;
+      label[yzhcz][cq] = label[cq][yzhcz] = 23;
+      pathStations[yzhcz][cq] = cq;
+      pathStations[cq][yzhcz] = yzhcz;
+    }
+    const hz = stationMap.get('花庄');
+    const tq = stationMap.get('土桥');
+    if(typeof (hz)!='undefined') {
+      dis[hz][tq] = dis[tq][hz] = 0.1;
+      label[hz][tq] = label[tq][hz] = 16;
+      pathStations[hz][tq] = tq;
+      pathStations[tq][hz] = hz;
+    }
 
   for (let k = 0; k < numStations; k++)
     for (let i = 0; i < numStations; i++)
@@ -423,6 +520,8 @@ function findPath(start, end) {
 }
 
 export function generateHeatMap(station, center, delta = [0.003, 0.002335], maxDis = 0.6) {
+  console.log('current!!',station);
+  isHeatmap = true;
   detailMode = true;
   if (currentStation) {
     currentStation
@@ -430,10 +529,20 @@ export function generateHeatMap(station, center, delta = [0.003, 0.002335], maxD
       .attr('stroke-width', 0.2);
     currentStation = null;
   }
+  let minDate=3000;
+  for (let j in station.properties.open){
+    console.log('current!!',station.properties.open[j],j);
+    if(station.properties.open[j]<minDate)
+      minDate=station.properties.open[j];
+  }
+  if (minDate>date)
+    station='notStation';
+
+  console.log('current!!',station);
   d3.select('#start-point').remove();
   g.selectAll('.fake-point')
     .attr('d', geopath.pointRadius(1.3 * geoScale / 40000));
-  if (station == 'notStation') {
+  if (station === 'notStation') {
     let startPoint = utils.getPointJson();
     startPoint.geometry.coordinates = center;
     g.append('path')
@@ -487,6 +596,7 @@ export function generateHeatMap(station, center, delta = [0.003, 0.002335], maxD
       }
   }
   else {
+    console.log('dafgsfdgdff');
     idList.push(station.id);
     getOnDis.push(0);
   }
@@ -625,7 +735,10 @@ export function generateHeatMap(station, center, delta = [0.003, 0.002335], maxD
           .raise();
       }
     })
-    .on('click', normalMode);
+    .on('click', function(e,d){
+      normalMode();
+      isHeatmap=false;
+    });
 
   g.selectAll('.heat-line')
     .data(points)
@@ -691,6 +804,9 @@ function actualMinDistance(idList, getOnDis, lat2, lon2) {
     let getOffDis = directDistance(lati, loni, lat2, lon2, 'Manhattan') / 5;
     for (let j = 0, jt = idList.length; j < jt; j++) {
       // 先走到地铁站idList[j]，乘地铁到地铁站i，然后走到终点
+      //console.log('wrong',idList)
+      //console.log('wrong',idList[j],i)
+      //console.log(disStations)
       let tmp = getOnDis[j] + disStations[idList[j]][i] + getOffDis;
       if (tmp < minDis) {
         minDis = tmp;

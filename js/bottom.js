@@ -1,14 +1,24 @@
 import * as utils from './utils.js';
 import { updateSide } from './matrix.js';
+import {getStationOpen} from "./data.js";
+import {updateMap} from "./map.js";
 
 const { windowHeight, windowWidth, outerMargin } = utils;
 
 export async function initBottom() {
-  let timeData = await fetch('../data/time.json')
-    .then(response => response.json());
-  let [minYear, maxYear] = [d3.min(timeData, d => d.year), d3.max(timeData, d => d.year)];
+  //let timeData = await getStationOpen();
+  let oldest = {'year':1971,'month':1};
+  let newest = {'year':2020,'month':11};
+  /*
+  for(let station in timeData){
+    for(let line in timeData[station]){
+      timeData[station][line].split('.')
+    }
+  }
+  */
+  let [minYear, maxYear] = [oldest['year']+(oldest['month']-1)/12-1, newest['year']+(newest['month']-1)/12];
   let timeScale = d3.scaleLinear()
-                    .domain([minYear - 0.1, maxYear + 1])
+                    .domain([minYear, maxYear])
                     .range([outerMargin + windowWidth * 0.1, outerMargin + windowWidth * 0.9]);
   // let timeAxis = d3.axisBottom(timeScale)
   //                  .ticks(timeData.length)
@@ -86,12 +96,16 @@ export async function initBottom() {
   drawDrag(minYear, maxYear, timeScale(minYear));
 }
 
+let currentYear;//现在年月
+let currentMonth;
+let currentTime;//现在时间
 function drawDrag(minYear, maxYear, offset) {
   const bottomContainer = d3.select('#bottom-container');
   const xMin = offset;
   const xMax = outerMargin + windowWidth * 0.9;
   const yDate = windowHeight * 0.02;
   const yTime = windowHeight * 0.07;
+
   let slideBlock;
   function getX(rx) {
     if (rx < xMin) {
@@ -103,7 +117,7 @@ function drawDrag(minYear, maxYear, offset) {
     }
   }
   function getDate(x) {
-    const numSeg = (maxYear + 1 - minYear) * 12,
+    const numSeg = (maxYear- minYear) * 12+4,
           segLen = (xMax - xMin) / numSeg,
           nSeg = Math.floor((x - xMin) / segLen),
           year = Math.floor(nSeg / 12) + minYear,
@@ -129,9 +143,12 @@ function drawDrag(minYear, maxYear, offset) {
   .on('drag', (e) => {
     slideBlock.attr('x', getX(e.x));
     const text = d3.select('#date-text').text();
+    currentYear=getDate(getX(e.x)).split('/')[0];
+    currentMonth=getDate(getX(e.x)).split('/')[1];
     d3.select('#date-text').text(getDate(getX(e.x)));
     if (text !== d3.select('#date-text').text()){
       updateSide('date', getDate(getX(e.x)));
+      updateMap(parseInt(currentYear)+(currentMonth-1)/12,0);
     }
   })
   .on('end', endDrag);
