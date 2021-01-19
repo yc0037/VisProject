@@ -46,6 +46,15 @@ body {
   border-radius: 5%;
   border: 1px solid #888888;
   background-color: #ffffffcc;
+  line-height: 30px;
+}
+
+.tooltip-title {
+  font-weight: bold;
+}
+
+.tooltip-line {
+  font-size: smaller;
 }
 
 #bottom-tooltip {
@@ -98,7 +107,7 @@ body {
   top: 10%;
   left: 10%;
   height: calc(80% - 20px);
-  width: 65%;
+  width: 61%;
   background-color: #ccccccbb;
 }
 
