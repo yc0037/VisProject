@@ -119,7 +119,7 @@ export async function initMain(date,time) {
       .data(allLinks)
       .enter().append('path')
       .attr('class', 'all-link')
-      .attr('id', d => `subway-line-${d.properties.name}`)
+      .attr('id', d => `subway-line-${d.properties.name}-i`)
       .attr('d', geopath)
       .attr('transform', `translate(0, -${offset})`)
       .attr('fill', 'transparent')
@@ -342,7 +342,10 @@ async function drawSubway(date,time) {
           .attr('d', geopath.pointRadius(2 * geoScale / 40000));
         d3.select(`#${d.properties.name}-fake`)
           .attr('d', geopath.pointRadius(Math.max(2, 4 / Math.sqrt(currentScale)) * geoScale / 40000));
-        let content = `name: ${d.properties.name}, id: ${d.id}, line:${d.properties.line}`;
+        let content = 
+        `<span class="tooltip-title">${d.properties.name}</span><br />
+        <span class="tooltip-line">${d.properties.line}</span><br />`;
+        // id: ${d.id}`;
         d3.select('#main-tooltip')
           .html(content)
           .style('top', `${e.clientY + 3}px`)
@@ -400,16 +403,14 @@ function drawLegend() {
         .style('background-color', '#dddddddd');
       d3.select(`#subway-line-${key}`)
         .attr('stroke', d3.color(colors[key]).darker().toString())
-        .attr('stroke-width', 2.5)
-        .raise();
+        .attr('stroke-width', 2);
     });
     legend.on('mouseout', e => {
       d3.select(`#legend-${key}`)
         .style('background-color', '#eeeeeedd');
       d3.select(`#subway-line-${key}`)
         .attr('stroke', colors[key])
-        .attr('stroke-width', 1.5)
-        .lower();
+        .attr('stroke-width', 1.5);
     });
     legend.on('click')
   }
