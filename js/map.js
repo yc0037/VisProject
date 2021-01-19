@@ -59,6 +59,12 @@ async function _updateMap(_date,_time){
   time=_time;
   //根据当前年月和时间维护numStations,links,stations,stationMap
   [stations,numStations,stationMap,links] = await lineStationPrepare(subwayLines,date,time);
+  for(let i=0;i<keyTime.length;i++){
+    [keyInfo[keyTime[i]].keyStations,
+      keyInfo[keyTime[i]].keyNumStations,
+      keyInfo[keyTime[i]].keyStationMap,
+      keyInfo[keyTime[i]].keyLinks] = await lineStationPrepare(subwayLines,keyTime[i],_time);
+  }
   await drawSubway(date,time);
 }
 
@@ -70,6 +76,9 @@ export async function initMain(_date,_time) {
   subwayLines = await getSubway();
   //读取地铁站开通时间
   openData = await getStationOpen();
+  //站点每天开始结束时间
+  timeData = await fetch('./data/subwaytime.json')
+      .then(response => response.json());
   //根据当前年月和时间生成numStations,links,stations,stationMap
   [ stations, numStations, stationMap, links] = await lineStationPrepare(subwayLines,date,time);
   //生成关键帧的数据结构
@@ -82,18 +91,14 @@ export async function initMain(_date,_time) {
       keyInfo[keyTime[i]].keyLinks] = await lineStationPrepare(subwayLines,keyTime[i],12.06);
   }
   //console.log('key',keyInfo);
-
-  //站点每天开始结束时间
-  timeData = await fetch('./data/subwaytime.json')
-    .then(response => response.json());
   console.log('timeata',timeData);
   console.log('date',date);
 
   geoFeature = await fetch(beijingMap)
       .then(response => response.json());
   geoprojection = d3.geoTransverseMercator().angle(231)
-    .fitExtent([[-mainWidth, -mainHeight * 3.5], 
-                [mainWidth * 2.3, mainHeight * 3.5]], 
+    .fitExtent([[-mainWidth, -mainHeight * 3.5],
+                [mainWidth * 2.3, mainHeight * 3.5]],
                 geoFeature);
   geoScale = geoprojection.scale();
   offset = geoScale / 200;
@@ -225,29 +230,41 @@ async function lineStationPrepare(subwayLines,date,time){
     for(let i=0;i<line.st.length;i++){
       let station = line.st[i];
       let open = openData[station.name][line.name];
-      if(open<date){   //在当前选择日期时已经开通
-        let point = utils.getPointJson();
-        point.properties.name = station.name;
-        point.properties.line.push(line.name); //站点所属线路信息
-        point.properties.open = openData[station.name];//加上车站开通时间
-        point.geometry.coordinates = [+station.x, +station.y];
-        tempStations.push(point);
+      let start=24;
+      let end =0;
+      for(let line in timeData[station.name]){
+        for(let sta in timeData[station.name][line]) {
+          let current = timeData[station.name][line][sta][0].split(':');
+      //    console.log('curent', current);//.split(':');
+          current = parseInt(current[0]) + current[1] / 60;
+          start = Math.min(current, start);
+          current = timeData[station.name][line][sta][1].split(':');
+          current = parseInt(current[0]) + current[1] / 60;
+          if(current<1)//半夜
+            current+=24;
+          end = Math.max(current, end);
+        }
+      }
+
+      //console.log(start,time,end);
+      if(open<date){   //在当前选择日期已经开通
+        if((line.isLoop && time>5 && time<23.8)||(!line.isLoop && time>start && time<end)) {
+          //if(open<date){   //在当前时间已经开通
+          let point = utils.getPointJson();
+          point.properties.name = station.name;
+          point.properties.time=[start,end];
+          point.properties.line.push(line.name); //站点所属线路信息
+          point.properties.open = openData[station.name];//加上车站开通时间
+          point.geometry.coordinates = [+station.x, +station.y];
+          tempStations.push(point);
+        }
+      }
+      else if(time<start || time>end){
+        console.log(station.name,"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1")
       }
     }
     return tempStations;
   });
-  //console.log('fake',_stations);
-
-  // stations = subwayLines.map(v => v.st.map(vv => {
-  //   let point = utils.getPointJson();
-  //   point.properties.name = vv.name;
-  //   point.properties.line.push(v.name); //站点所属线路信息
-  //   point.properties.open = openData[vv.name];//加上车站开通时间
-  //   point.geometry.coordinates = [+vv.x, +vv.y];
-  //   return point;
-  // }));
-
-  //console.log('beforeflatten',_stations);
   _stations = _.flattenDeep(_stations);
   let _numStations = _stations.length;
   console.log('station',_stations);
@@ -280,9 +297,16 @@ async function lineStationPrepare(subwayLines,date,time){
     line.stations = [];
     for(let j=0;j<_line.st.length;j++){
       let station = _line.st[j];
+      let _station = _stations[_stationMap.get(station.name)];
+      if(typeof (_station)==='undefined')
+        continue;
+      console.log(_station,station.name,"dfgsfdgsfdgsdfgsdfgsdfgsdg");
       if(openData[station.name][_line.name]<date){
-        line.geometry.coordinates.push([station.x, station.y]);
-        line.stations.push(_stationMap.get(station.name));
+        if((!_line.isLoop && time>_station.properties.time[0] && time<_station.properties.time[1])||
+            (_line.isLoop && time>5 && time<23.8)) {
+          line.geometry.coordinates.push([station.x, station.y]);
+          line.stations.push(_stationMap.get(station.name));
+          }
       }
     }
     if(line.geometry.coordinates.length===0)//去除还未开通地铁线路
@@ -489,9 +513,9 @@ async function calcDistForStations(links,stations,stationMap,numStations) {
       let sFirst, tFirst;
       //console.log(sName,tName,lineName,firstStation,lastStation);
       if (link.isLoop) {
-        //console.log(j,jt,link.stations[(j + 2) % jt],link.stations);
         //console.log(sName,tName,lineName,firstStation,lastStation);
         let tNextName = stations[link.stations[(j + 2) % jt]].properties.name;
+        console.log(tNextName);
         if (j === jt - 2)
         tNextName = stations[link.stations[1]].properties.name;
         sFirst = timeData[sName][lineName][tName][0];
@@ -530,7 +554,7 @@ async function calcDistForStations(links,stations,stationMap,numStations) {
         dzm = stationMap.get('东直门'),
         syq = stationMap.get('三元桥');
     console.log('t2',t2);
-    if(typeof(t2)!='undefined'&&typeof(t3)!='undefined') {
+    if(typeof(t2)!='undefined'&&typeof(t3)!='undefined'&&typeof(dzm)!='undefined'&&typeof(syq)!='undefined') {
       dis[dzm][syq] = dis[syq][dzm] = 1 / 15;
       label[dzm][syq] = label[syq][dzm] = 20;
       pathStations[dzm][syq] = syq;
@@ -549,7 +573,7 @@ async function calcDistForStations(links,stations,stationMap,numStations) {
 
     const yzhcz = stationMap.get('亦庄火车站');
     const cq = stationMap.get('次渠');
-    if(typeof (yzhcz)!='undefined'){
+    if(typeof (yzhcz)!='undefined'&&typeof(cq)!='undefined'){
       dis[yzhcz][cq] = dis[cq][yzhcz] = 1 / 12;
       label[yzhcz][cq] = label[cq][yzhcz] = 23;
       pathStations[yzhcz][cq] = cq;
@@ -557,7 +581,7 @@ async function calcDistForStations(links,stations,stationMap,numStations) {
     }
     const hz = stationMap.get('花庄');
     const tq = stationMap.get('土桥');
-    if(typeof (hz)!='undefined') {
+    if(typeof (hz)!='undefined'&&typeof (tq)!='undefined') {
       dis[hz][tq] = dis[tq][hz] = 0.1;
       label[hz][tq] = label[tq][hz] = 16;
       pathStations[hz][tq] = tq;
@@ -611,6 +635,7 @@ function generateKeyHeatMap(history, station, center, delta = [0.003, 0.002335],
   let stationMap = keyInfo[history].keyStationMap;
   let stationNum = keyInfo[history].keyNumStations;
   let disStations = keyInfo[history].keyDisStations;
+  let adjStation = keyInfo[history].keyAdjStations;
   //判断当前选中车站在历史时刻是否开通
   let openFlag=0;
   if(station!='notStation'){
@@ -624,7 +649,7 @@ function generateKeyHeatMap(history, station, center, delta = [0.003, 0.002335],
     else
       station.id=stationMap.get(station.properties.name);
   }
-  console.log(station);
+  console.log('sign!!!!',stations);
   //station.id=stationMap.get(station.properties.name);
   let idList = new Array();
   let getOnDis = new Array();
@@ -737,8 +762,8 @@ function keyHeatMap(){
         .append('circle')
         .attr('class', keyTime+'circle')
         .attr('cx',(d,i)=>x(d.geometry.coordinates[0]))
-        .attr('cy',(d,i)=>y(d.geometry.coordinates[1]))
-        .attr('r',3)
+        .attr('cy',(d,i)=>(250-y(d.geometry.coordinates[1])))
+        .attr('r',15000/allPoints.length)
         .attr('transform', `translate(${offset[keyTime][0]}, ${offset[keyTime][1]})`)
         .attr('fill', d => pointColorInterpolate(d.colorIndex));
     keyTimeSvg.append('text')
