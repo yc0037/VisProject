@@ -81,6 +81,7 @@ export async function initMain(_date,_time) {
       .then(response => response.json());
   //根据当前年月和时间生成numStations,links,stations,stationMap
   [ stations, numStations, stationMap, links] = await lineStationPrepare(subwayLines,date,time);
+  console.log("地铁站",stations)
   //生成关键帧的数据结构
   for(let i=0;i<keyTime.length;i++){
     keyInfo[keyTime[i]]=await getKeyInfo(keyTime[i]);
@@ -141,7 +142,9 @@ export async function initMain(_date,_time) {
 
   g = d3.select('#main-svg')
       .select('g');
-  pointG = d3.select('#side').select('svg')
+  pointG = d3.select('#side-down').append('svg')
+      .style('width', '100%')
+      .style('height', '100%')
       .append('g');
   //生成线路的底色
   await g.selectAll('.all-link')
@@ -300,7 +303,7 @@ async function lineStationPrepare(subwayLines,date,time){
       let _station = _stations[_stationMap.get(station.name)];
       if(typeof (_station)==='undefined')
         continue;
-      console.log(_station,station.name,"dfgsfdgsfdgsdfgsdfgsdfgsdg");
+      //console.log(_station,station.name,"dfgsfdgsfdgsdfgsdfgsdfgsdg");
       if(openData[station.name][_line.name]<date){
         if((!_line.isLoop && time>_station.properties.time[0] && time<_station.properties.time[1])||
             (_line.isLoop && time>5 && time<23.8)) {
@@ -515,7 +518,7 @@ async function calcDistForStations(links,stations,stationMap,numStations) {
       if (link.isLoop) {
         //console.log(sName,tName,lineName,firstStation,lastStation);
         let tNextName = stations[link.stations[(j + 2) % jt]].properties.name;
-        console.log(tNextName);
+        //console.log(tNextName);
         if (j === jt - 2)
         tNextName = stations[link.stations[1]].properties.name;
         sFirst = timeData[sName][lineName][tName][0];

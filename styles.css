@@ -31,8 +31,18 @@ body {
 #side {
   /* background-color: #ffeeff; */
   flex: 1 0 0;
+  top:20%;
   min-width: 450px;
 }
+
+#side-up{
+  height: 10%;
+}
+
+#side-down{
+  height: 90%;
+}
+
 
 #bottom {
   /* background-color: #ffffee; */
@@ -74,6 +84,23 @@ body {
   position: absolute;
   top: 10%;
   left: 0;
+}
+
+#dest-container {
+  /*display: flex;*/
+  /*flex-direction: column;*/
+  /*justify-content: center;*/
+  width: 100%;
+  height: 100%;
+  /*width: 10%;*/
+  /*height: calc(80% - 20px);*/
+  background-color: #eeeeeedd;
+  /*position: absolute;*/
+}
+
+#destinations{
+  width:100%;
+  height:100%;
 }
 
 .map-legend {

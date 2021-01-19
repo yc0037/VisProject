@@ -23,8 +23,8 @@ let g = sideSvg.append('g').attr('id', 'matrix');
 
 export function initSide() {
   const cellWidth = 8;
-  const topOffset = (mainHeight - cellWidth * distMatrix.length + 100) / 2;
-  const leftOffset = (sideWidth - cellWidth * distMatrix.length) / 2;
+  const topOffset = (mainHeight - cellWidth * 50 + 100) / 2;
+  const leftOffset = (sideWidth - cellWidth * 50) / 2;
   function fover(e) {
     let [ , ii, jj] = e.target.id.split('-');
     const parent = document.querySelector('#matrix');
@@ -56,59 +56,60 @@ export function initSide() {
     d3.select('#side-tooltip')
       .style('visibility', 'hidden');
   }
-  for (let i = 0; i < distMatrix.length; ++i) {
-    for (let j = 0; j < distMatrix[i].length; ++j) {
-      g.append('rect')
-        .attr('x', leftOffset + j * cellWidth)
-        .attr('y', topOffset + i * cellWidth)
-        .attr('width', cellWidth)
-        .attr('height', cellWidth)
-        .attr('fill', colorScale(distMatrix[i][j]))
-        .attr('stroke', '#ffffff')
-        .attr('stroke-width', 0.5)
-        .attr('id', `cell-${i}-${j}`)
-        .on('mouseover', fover)
-        .on('mouseout', fout);
-    }
-  }
-  let linearGradient = sideSvg.append('defs')
-                              .append('linearGradient')
-                                .attr('id', 'linearColor')
-                                .attr('x1', '0%')
-                                .attr('x2', '100%')
-                                .attr('y1', '0%')
-                                .attr('y2', '0%');
-  linearGradient.append('stop')
-                .attr('offset', '0%')
-                .attr('stop-color', '#52c41a');
-  linearGradient.append('stop')
-                .attr('offset', '50%')
-                .attr('stop-color', '#ffffff');
-  linearGradient.append('stop')
-                .attr('offset', '100%')
-                .attr('stop-color', '#f5222d');
-  sideSvg.append('rect')
-          .attr('width', sideWidth * 0.8)
-          .attr('height', 20)
-          .attr('x', sideWidth * 0.1)
-          .attr('y', topOffset + distMatrix.length * cellWidth + 20)
-          .attr('fill', `url(#${linearGradient.attr('id')})`);
-  sideSvg.append('text')
-          .attr('x', sideWidth * 0.1 - 4)
-          .attr('y', topOffset + distMatrix.length * cellWidth + 55)
-          .attr('font-size', 12)
-          .text('0');
-  sideSvg.append('text')
-          .attr('x', sideWidth * 0.5 - 4)
-          .attr('y', topOffset + distMatrix.length * cellWidth + 55)
-          .attr('font-size', 12)
-          .text('5');
-  sideSvg.append('text')
-          .attr('x', sideWidth * 0.9 - 4)
-          .attr('y', topOffset + distMatrix.length * cellWidth + 55)
-          .attr('font-size', 12)
-          .text('10')
   drawDest(cellWidth);
+  // for (let i = 0; i < distMatrix.length; ++i) {
+  //   for (let j = 0; j < distMatrix[i].length; ++j) {
+  //     g.append('rect')
+  //       .attr('x', leftOffset + j * cellWidth)
+  //       .attr('y', topOffset + i * cellWidth)
+  //       .attr('width', cellWidth)
+  //       .attr('height', cellWidth)
+  //       .attr('fill', colorScale(distMatrix[i][j]))
+  //       .attr('stroke', '#ffffff')
+  //       .attr('stroke-width', 0.5)
+  //       .attr('id', `cell-${i}-${j}`)
+  //       .on('mouseover', fover)
+  //       .on('mouseout', fout);
+  //   }
+  // }
+  // let linearGradient = sideSvg.append('defs')
+  //                             .append('linearGradient')
+  //                               .attr('id', 'linearColor')
+  //                               .attr('x1', '0%')
+  //                               .attr('x2', '100%')
+  //                               .attr('y1', '0%')
+  //                               .attr('y2', '0%');
+  // linearGradient.append('stop')
+  //               .attr('offset', '0%')
+  //               .attr('stop-color', '#52c41a');
+  // linearGradient.append('stop')
+  //               .attr('offset', '50%')
+  //               .attr('stop-color', '#ffffff');
+  // linearGradient.append('stop')
+  //               .attr('offset', '100%')
+  //               .attr('stop-color', '#f5222d');
+  // sideSvg.append('rect')
+  //         .attr('width', sideWidth * 0.8)
+  //         .attr('height', 20)
+  //         .attr('x', sideWidth * 0.1)
+  //         .attr('y', topOffset + distMatrix.length * cellWidth + 20)
+  //         .attr('fill', `url(#${linearGradient.attr('id')})`);
+  // sideSvg.append('text')
+  //         .attr('x', sideWidth * 0.1 - 4)
+  //         .attr('y', topOffset + distMatrix.length * cellWidth + 55)
+  //         .attr('font-size', 12)
+  //         .text('0');
+  // sideSvg.append('text')
+  //         .attr('x', sideWidth * 0.5 - 4)
+  //         .attr('y', topOffset + distMatrix.length * cellWidth + 55)
+  //         .attr('font-size', 12)
+  //         .text('5');
+  // sideSvg.append('text')
+  //         .attr('x', sideWidth * 0.9 - 4)
+  //         .attr('y', topOffset + distMatrix.length * cellWidth + 55)
+  //         .attr('font-size', 12)
+  //         .text('10')
+
 }
 
 function _updateSide() {
@@ -128,7 +129,7 @@ export const updateSide = _.debounce(_updateSide, 50);
 export async function drawDest(cellWidth){
   const subwayLines = await getDest();
   const dest_class = Object.keys(subwayLines);
-  const destHeight = (mainHeight - cellWidth * distMatrix.length + 100) / 2;
+  const destHeight = (mainHeight - cellWidth * 50 + 100) / 2;
   const destWidth = sideWidth;
   let g2 = sideSvg.append('g').attr('id', 'destinations');
   let g3;
