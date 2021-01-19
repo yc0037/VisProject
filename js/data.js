@@ -16,7 +16,20 @@ export async function getSubway() {
   return subwayLines;
 }
 
-//
+export async function getKeyInfo(date){
+    const keyInfo={
+        keyDate:date,
+        keyStations:[],
+        keyNumStations:0,
+        keyLinks:[],
+        keyStationMap:{},
+        keyLabel:[],
+        keyPathStations:[],
+        keyAdjStations:[],
+        keyDisStations:[]
+    }
+    return keyInfo;
+}
 export async function getStationOpen() {
     const stationOpentimes =
         await fetch('./data/subwayopen.json')

@@ -1,7 +1,7 @@
-import { getStationCode, getSubway,getStationOpen } from "./data.js";
+import { getStationCode, getSubway,getStationOpen ,getKeyInfo} from "./data.js";
 import * as utils from './utils.js';
 
-const { mainHeight, mainWidth } = utils;
+const { mainHeight, mainWidth,sideWidth } = utils;
 
 let geoFeature;
 let geopath;
@@ -37,40 +37,57 @@ let isHeatmap;//判断是否现在显示有热力图
 const maskTime = 200;
 let subwayLines;
 let allLinks; //保存初始的所有线路
+let keyTime=[1980,2000,2010,2020];//关键帧时间
+let keyInfo={};
 
 //更改年月或日期调用函数
 export const updateMap = _.debounce(_updateMap,50)
 
 async function _updateMap(_date,_time){
-  //逻辑有问题暂时没有修改
+  //更新时去掉已画热力图
   if(isHeatmap===true)
   {
     normalMode();
     isHeatmap=false;
   }
-  normalMode();
-  //根据当前年月和时间维护numStations,links,stations,stationMap
-  await lineStationPrepare(subwayLines,date,time);
+  //normalMode();
+
   date=_date;
+  time=_time;
+  //根据当前年月和时间维护numStations,links,stations,stationMap
+  [stations,numStations,stationMap,links] = await lineStationPrepare(subwayLines,date,time);
   await drawSubway(date,time);
 }
 
-export async function initMain(date,time) {
+export async function initMain(_date,_time) {
+  date=_date;
+  time=_time;
   createLoadingMask();
   //读取地铁站基本信息
   subwayLines = await getSubway();
   //读取地铁站开通时间
   openData = await getStationOpen();
   //根据当前年月和时间生成numStations,links,stations,stationMap
-  await lineStationPrepare(subwayLines,date,time);
+  [ stations, numStations, stationMap, links] = await lineStationPrepare(subwayLines,date,time);
+  //生成关键帧的数据结构
+  for(let i=0;i<keyTime.length;i++){
+    keyInfo[keyTime[i]]=await getKeyInfo(keyTime[i]);
+    await lineStationPrepare(subwayLines,keyTime[i],12.06);
+    [keyInfo[keyTime[i]].keyStations,
+      keyInfo[keyTime[i]].keyNumStations,
+      keyInfo[keyTime[i]].keyStationMap,
+      keyInfo[keyTime[i]].keyLinks] = await lineStationPrepare(subwayLines,keyTime[i],12.06);
+  }
+  //console.log('key',keyInfo);
 
-  geoFeature = await fetch(beijingMap)
-    .then(response => response.json());
+  //站点每天开始结束时间
   timeData = await fetch('./data/subwaytime.json')
     .then(response => response.json());
-  console.log('timedata',timeData);
-
+  console.log('timeata',timeData);
   console.log('date',date);
+
+  geoFeature = await fetch(beijingMap)
+      .then(response => response.json());
   geoprojection = d3.geoTransverseMercator().angle(231)
     .fitExtent([[-mainWidth, -mainHeight * 3.5], 
                 [mainWidth * 2.3, mainHeight * 3.5]], 
@@ -103,6 +120,8 @@ export async function initMain(date,time) {
           setTimeout(() => {
             let [lat, lon] = ClientToCoordinate(e.clientX, e.clientY);
             generateHeatMap('notStation', [lat, lon]);
+            for(let i=0;i<keyTime;i++)
+              generateKeyHeatMap(keyTime[i],'notStation',[lat, lon]);
             setTimeout(() => {
               hideLoadingMask();
               setTimeout(() => showHeatPoint(), maskTime + 4);
@@ -195,8 +214,8 @@ export function showHeatPoint() {
 }
 
 async function lineStationPrepare(subwayLines,date,time){
-
-  stations = subwayLines.map(function(line){
+  // 命名前加下划线表示局部变量
+  let _stations = subwayLines.map(function(line){
     let tempStations=new Array();
     for(let i=0;i<line.st.length;i++){
       let station = line.st[i];
@@ -212,7 +231,7 @@ async function lineStationPrepare(subwayLines,date,time){
     }
     return tempStations;
   });
-  console.log('fake',stations);
+  //console.log('fake',_stations);
 
   // stations = subwayLines.map(v => v.st.map(vv => {
   //   let point = utils.getPointJson();
@@ -223,31 +242,31 @@ async function lineStationPrepare(subwayLines,date,time){
   //   return point;
   // }));
 
-  console.log('beforeflatten',stations);
-  stations = _.flattenDeep(stations);
-  numStations = stations.length;
-  console.log('station',stations);
+  //console.log('beforeflatten',_stations);
+  _stations = _.flattenDeep(_stations);
+  let _numStations = _stations.length;
+  console.log('station',_stations);
   //换乘站点地铁线路合并
-  for (let i = 0; i < numStations; i++){
-    for (let j = i+1; j < numStations; j++){
-      if (_.isEqual(stations[i].geometry.coordinates,stations[j].geometry.coordinates)&& i!=j){
-        let merge = stations[i].properties.line.concat(stations[j].properties.line);
-        stations[i].properties.line = merge;
-        stations[j].properties.line = merge;
+  for (let i = 0; i < _numStations; i++){
+    for (let j = i+1; j < _numStations; j++){
+      if (_.isEqual(_stations[i].geometry.coordinates,_stations[j].geometry.coordinates)&& i!=j){
+        let merge = _stations[i].properties.line.concat(_stations[j].properties.line);
+        _stations[i].properties.line = merge;
+        _stations[j].properties.line = merge;
       }
     }
   }
   // 去除重复地铁站
-  stations = _.uniqWith(stations, _.isEqual);
+  _stations = _.uniqWith(_stations, _.isEqual);
 
-  stationMap = new Map();
-  numStations = stations.length;
-  console.log(numStations);
-  for(let i=0;i<numStations;i++){
-    stations[i].id = i;
-    stationMap.set(stations[i].properties.name, i);
+  let _stationMap = new Map();
+  _numStations = _stations.length;
+  //console.log(_numStations);
+  for(let i=0;i<_numStations;i++){
+    _stations[i].id = i;
+    _stationMap.set(_stations[i].properties.name, i);
   }
-  links = [];
+  let _links = [];
   for(let i=0;i<subwayLines.length;i++){
     let _line = subwayLines[i];
     let line = utils.getLineJson();
@@ -257,7 +276,7 @@ async function lineStationPrepare(subwayLines,date,time){
       let station = _line.st[j];
       if(openData[station.name][_line.name]<date){
         line.geometry.coordinates.push([station.x, station.y]);
-        line.stations.push(stationMap.get(station.name));
+        line.stations.push(_stationMap.get(station.name));
       }
     }
     if(line.geometry.coordinates.length===0)//去除还未开通地铁线路
@@ -281,25 +300,35 @@ async function lineStationPrepare(subwayLines,date,time){
      // if ((_line.name==='地铁2号线'&&date>=1988) ||(_line.name==='地铁10号线'&&date>2013.3)) {
      if ((_line.name==='地铁2号线') ||(_line.name==='地铁10号线')) {
       line.geometry.coordinates.push([_line.st[0].x, _line.st[0].y]);
-      line.stations.push(stationMap.get(_line.st[0].name));
+      line.stations.push(_stationMap.get(_line.st[0].name));
       //line.isLoop=true;
     }
-    links.push(line);
+    _links.push(line);
   }
-  console.log('link',links);
+  console.log('link',_links);
 
   //最全线路记录
   if(date>=2020.8)
-    allLinks=links;
+    allLinks=_links;
+
+  //传参
+  return[_stations,_numStations,_stationMap,_links];
 }
 
 async function drawSubway(date,time) {
 
-  //根据当前年月和时间维护numStations,links,stations,stationMap
-  await lineStationPrepare(subwayLines,date,time);
-
-  disStations = calcDistForStations(links);
-  console.log('delete!',links);
+  [disStations,label,pathStations,adjStation] = await calcDistForStations(links,stations,stationMap,numStations);
+  for(let history in keyInfo){
+    [
+      keyInfo[history].keyDisStations,
+      keyInfo[history].keyLabel,
+      keyInfo[history].keyPathStations,
+      keyInfo[history].keyAdjStations
+    ] = await calcDistForStations(keyInfo[history].keyLinks,
+                                  keyInfo[history].keyStations,
+                                  keyInfo[history].keyStationMap,
+                                  keyInfo[history].keyNumStations);
+  }
   //原先画的线路图，路径点，站点先都删除
   await g.selectAll('.path-link').remove();
   await g.selectAll('.path-point').remove();
@@ -368,8 +397,12 @@ async function drawSubway(date,time) {
       .on('click', function(e, d) {
         showLoadingMask();
         setTimeout(() => {
-          console.log('当前站点',stations);
+          //console.log('当前站点',stations);
           generateHeatMap(d, d.geometry.coordinates);
+          for(let i=0;i<keyTime;i++){
+            console.log('test!!!!');
+            generateKeyHeatMap(keyTime[i],d,d.geometry.coordinates);
+          }
           setTimeout(() => {
             hideLoadingMask();
             setTimeout(() => showHeatPoint(), maskTime + 4);
@@ -410,16 +443,17 @@ function drawLegend() {
         .attr('stroke', colors[key])
         .attr('stroke-width', 1.5)
         .lower();
+      console.log('wrong!');
     });
     legend.on('click')
   }
 }
 
 
-function calcDistForStations(links) {
+async function calcDistForStations(links,stations,stationMap,numStations) {
   let dis = new Array();
-  label = new Array(); // 记录地铁线路信息，用于计算换乘时间，label[i][j]表示i到j的最短路上的第一条地铁线路
-  pathStations = new Array(); // 记录路径信息，path[i][j]表示i到j的最短路上的第二个点
+  let label = new Array(); // 记录地铁线路信息，用于计算换乘时间，label[i][j]表示i到j的最短路上的第一条地铁线路
+  let pathStations = new Array(); // 记录路径信息，path[i][j]表示i到j的最短路上的第二个点
   for (let i = 0; i < numStations; i++) {
     dis[i] = new Array();
     dis[i][i] = 0;
@@ -539,14 +573,14 @@ function calcDistForStations(links) {
               pathStations[j][i] = pathStations[j][k];
             }
           }
-  adjStation = new Array();
+  let adjStation = new Array();
   for (let i = 0; i < numStations; i++) {
     adjStation[i] = new Array();
     for (let j = 0; j < numStations; j++) {
       adjStation[i][j] = (pathStations[i][j] == j);
     }
   }
-  return dis;
+  return [dis,label,pathStations,adjStation];
 }
 
 function findPath(start, end) {
@@ -557,6 +591,102 @@ function findPath(start, end) {
     start = mid;
   }
   return res;
+}
+
+//@history 标记历史时间点
+//@station 当前选中站点信息
+function generateKeyHeatMap(history, station, center, delta = [0.003, 0.002335], maxDis = 0.6){
+
+  let [X, Y] = center;
+  let [deltaX, deltaY] = delta;
+  let stations = keyInfo[history].keyStations;
+  let links = keyInfo[history].keyLinks;
+  let stationMap = keyInfo[history].keyStationMap;
+  let stationNum = keyInfo[history].keyNumStations;
+  let disStations = keyInfo[history].keyDisStations;
+  //判断当前选中车站在历史时刻是否开通
+  let openFlag=0;
+  if(station!='notStation'){
+    for (let j in station.properties.open){
+      console.log('current!!',station.properties.open[j],j);
+      if(station.properties.open[j]<history)
+        openFlag=1;
+    }
+    if (!openFlag)
+      station='notStation';
+  }
+  let idList = new Array();
+  let getOnDis = new Array();
+  if (station === 'notStation') {
+    // 找离起点最近的几个地铁站，记在idList里
+    let nearFlag = new Array();
+    for (let k = 0; k < stationNum; k++) {
+      let [kx, ky] = stations[k].geometry.coordinates;
+      for (let i = 0; i < stationNum; i++) {
+        let [ix, iy] = stations[i].geometry.coordinates;
+        for (let j = 0; j < stationNum; j++)
+          if (adjStation[i][j]) {
+            let [jx, jy] = stations[j].geometry.coordinates;
+            let tmp1 = (ix - X) * (ky - Y) - (kx - X) * (iy - Y);
+            let tmp2 = (jx - X) * (ky - Y) - (kx - X) * (jy - Y);
+            let tmp3 = (kx - ix) * (jy - iy) - (jx - ix) * (ky - iy);
+            let tmp4 = (X - ix) * (jy - iy) - (jx - ix) * (Y - iy);
+            if (tmp1 * tmp2 < 0 && tmp3 * tmp4 < 0) {
+              nearFlag[k] = -1;
+              break;
+            }
+          }
+        if (nearFlag[k] == -1) break;
+      }
+    }
+    for (let i = 0; i < numStations; i++)
+      if (nearFlag[i] != -1) {
+        idList.push(i);
+        let [ix, iy] = stations[i].geometry.coordinates;
+        getOnDis.push(directDistance(X, Y, ix, iy, 'Manhattan') / 5);
+      }
+  }
+  else {
+    idList.push(station.id);
+    getOnDis.push(0);
+  }
+
+  let points = [];
+
+  let flag = true;
+  let t = 0, prevT = -1;
+
+  while (flag) {
+    flag = false;
+    for (let i = 0, it = Math.sqrt(t); i <= it; i++)
+      for (let j = Math.ceil(Math.sqrt(Math.max(prevT - i * i, 0))), jt = Math.sqrt(t - i * i); j <= jt; j++)
+        for (let k = -1; k <= 1; k = k + 2)
+          if (i != 0 || k != 1)
+            for (let l = -1; l <= 1; l = l + 2)
+              if (j != 0 || l != 1) {
+                let dx = X + k * i * deltaX;
+                let dy = Y + l * j * deltaY;
+                let [dis, getOnStation, getOffStation] = actualMinDistance(idList, getOnDis, dx, dy,stations,stationNum,disStations);
+                let walkDis = directDistance(X, Y, dx, dy, 'Manhattan') / 5;
+                if (walkDis <= dis) {
+                  dis = walkDis;
+                  getOnStation = null;
+                  getOffStation = null;
+                }
+                if (dis <= maxDis) {
+                  let point = utils.getPointJson();
+                  point.geometry.coordinates = [dx, dy];
+                  point.colorIndex = dis / maxDis;
+                  point.getOn = getOnStation;
+                  point.getOff = getOffStation;
+                  points.push(point);
+                  flag = true;
+                }
+              }
+    prevT = t;
+    t = (t + 1) * 2;
+  }
+  console.log('afsdfadfasdfadfasdfasdfasdfds',history,points.length);
 }
 
 export function generateHeatMap(station, center, delta = [0.003, 0.002335], maxDis = 0.6) {
@@ -610,8 +740,8 @@ export function generateHeatMap(station, center, delta = [0.003, 0.002335], maxD
   let [X, Y] = center;
   let [deltaX, deltaY] = delta;
 
-  let idList = new Array();
-  let getOnDis = new Array();
+  let idList = [];
+  let getOnDis = [];
   if (station === 'notStation') {
     // 找离起点最近的几个地铁站，记在idList里
     let nearFlag = new Array();
@@ -642,7 +772,6 @@ export function generateHeatMap(station, center, delta = [0.003, 0.002335], maxD
       }
   }
   else {
-    console.log('dafgsfdgdff');
     idList.push(station.id);
     getOnDis.push(0);
   }
@@ -662,7 +791,7 @@ export function generateHeatMap(station, center, delta = [0.003, 0.002335], maxD
               if (j != 0 || l != 1) {
                 let dx = X + k * i * deltaX;
                 let dy = Y + l * j * deltaY;
-                let [dis, getOnStation, getOffStation] = actualMinDistance(idList, getOnDis, dx, dy);
+                let [dis, getOnStation, getOffStation] = actualMinDistance(idList, getOnDis, dx, dy,stations,numStations,disStations);
                 let walkDis = directDistance(X, Y, dx, dy, 'Manhattan') / 5;
                 if (walkDis <= dis) {
                   dis = walkDis;
@@ -840,7 +969,7 @@ function directDistance(lat1, lon1, lat2, lon2, type) {
   }
 }
 
-function actualMinDistance(idList, getOnDis, lat2, lon2) {
+function actualMinDistance(idList, getOnDis, lat2, lon2,stations,numStations,disStations) {
   // 给定起始地点附近的地铁站idList、起始地点到附近地铁站的时间getOnDis、目标地点[lat2, lon2]，求最短时间
   let minDis = 100000;
   let getOnStation;
@@ -868,6 +997,3 @@ function ClientToCoordinate(ClientX, ClientY) {
   let titleMargin = 0.1 * document.body.clientHeight;
   return geoprojection.invert([(ClientX - currentTranslate.x) / currentScale, (ClientY - currentTranslate.y - titleMargin) / currentScale + offset]);
 }
-
-let currentYear;
-let current

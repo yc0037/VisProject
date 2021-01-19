@@ -5,7 +5,7 @@ import { initSide } from './matrix.js';
 async function main() {
   initBottom();
   initSide();
-  initMain(2020.83);
+  initMain(2020.83,12.067);
 }
 
 main();
