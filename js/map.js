@@ -742,7 +742,7 @@ function generateKeyHeatMap(history, station, center, delta = [0.003, 0.002335],
 
 }
 
-export function generateHeatMap(station, center, delta = [0.003, 0.002335], maxDis = 0.6) {
+export function generateHeatMap(station, center, delta = [2 * 0.003, 2 * 0.002335], maxDis = 0.6) {
   console.log('current!!',station);
   isHeatmap = true;
   detailMode = true;
@@ -854,7 +854,7 @@ export function generateHeatMap(station, center, delta = [0.003, 0.002335], maxD
                 if (dis <= maxDis) {
                   let point = utils.getPointJson();
                   point.geometry.coordinates = [dx, dy];
-                  point.colorIndex = dis / maxDis;
+                  point.colorIndex = dis * dis / maxDis / maxDis;
                   point.getOn = getOnStation;
                   point.getOff = getOffStation;
                   points.push(point);
