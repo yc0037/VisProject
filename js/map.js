@@ -40,7 +40,7 @@ let isHeatmap;//判断是否现在显示有热力图
 const maskTime = 200;
 let subwayLines;
 let allLinks; //保存初始的所有线路
-let keyTime=[1980,2000,2010,2020];//关键帧时间
+const keyTime=[1999, 2006, 2013, 2020];//关键帧时间
 let keyInfo={};
 
 //更改年月或日期调用函数
@@ -215,7 +215,7 @@ export function showHeatPoint() {
       d3.select(nodes[i])
         .style('visibility', 'visible');
       d3.select(nodes[i]).transition().ease(d3.easePolyOut).duration(120)
-        .attr('d', geopath.pointRadius(1.3 * geoScale / 40000));
+        .attr('d', geopath.pointRadius(2.6 * geoScale / 40000));
     }, appearTimeInterpolate(d.colorIndex));
   });
   setTimeout(() => {
@@ -626,7 +626,7 @@ function findPath(start, end) {
 
 //@history 标记历史时间点
 //@station 当前选中站点信息
-function generateKeyHeatMap(history, station, center, delta = [0.003, 0.002335], maxDis = 0.6){
+function generateKeyHeatMap(history, station, center, delta = [0.003 * 2, 0.002335 * 2], maxDis = 1.5){
   console.log('test',keyInfo[history]);
   let [X, Y] = center;
   let [deltaX, deltaY] = delta;
@@ -680,7 +680,7 @@ function generateKeyHeatMap(history, station, center, delta = [0.003, 0.002335],
         idList.push(i);
         console.log(stations[i]);
         let [ix, iy] = stations[i].geometry.coordinates;
-        getOnDis.push(directDistance(X, Y, ix, iy, 'Manhattan') / 5);
+        getOnDis.push(directDistance(X, Y, ix, iy, 'Euclidean') / 5);
       }
   }
   else {
@@ -705,7 +705,7 @@ function generateKeyHeatMap(history, station, center, delta = [0.003, 0.002335],
                 let dx = X + k * i * deltaX;
                 let dy = Y + l * j * deltaY;
                 let [dis, getOnStation, getOffStation] = actualMinDistance(idList, getOnDis, dx, dy,stations,stationNum,disStations);
-                let walkDis = directDistance(X, Y, dx, dy, 'Manhattan') / 5;
+                let walkDis = directDistance(X, Y, dx, dy, 'Euclidean') / 5;
                 if (walkDis <= dis) {
                   dis = walkDis;
                   getOnStation = null;
@@ -735,7 +735,7 @@ function keyHeatMap(){
   let c = d3.rgb(47, 84, 235);
   let allPoints=[];
   //分成四块区域
-  let offset = {1980:[0,50],2000:[(windowWidth-mainWidth)/2,50],2010:[0,300],2020:[(windowWidth-mainWidth)/2,300]};
+  let offset = {1999:[0,50], 2006:[(windowWidth-mainWidth)/2,50], 2013:[0,300], 2020:[(windowWidth-mainWidth)/2,300]};
   let pointColorInterpolate = d3.interpolate(a, b);
 
   for(let keyTime in keyInfo) {
@@ -765,7 +765,7 @@ function keyHeatMap(){
         .attr('cy',(d,i)=>(250-y(d.geometry.coordinates[1])))
         .attr('r',15000/allPoints.length)
         .attr('transform', `translate(${offset[keyTime][0]}, ${offset[keyTime][1]})`)
-        .attr('fill', d => pointColorInterpolate(d.colorIndex));
+        .attr('fill', 'black');
     keyTimeSvg.append('text')
         .text(keyTime)
         .attr('font-size','1rem')
@@ -788,7 +788,7 @@ function keyHeatMap(){
     //     .attr('r',  (d, i) => radius(d[y_attr]))
   }
 }
-export function generateHeatMap(station, center, delta = [ 0.003,0.002335], maxDis = 0.6) {
+export function generateHeatMap(station, center, delta = [0.003 * 2, 0.002335 * 2], maxDis = 1.5) {
   console.log('current!!',station);
   isHeatmap = true;
   detailMode = true;
@@ -867,7 +867,7 @@ export function generateHeatMap(station, center, delta = [ 0.003,0.002335], maxD
       if (nearFlag[i] != -1) {
         idList.push(i);
         let [ix, iy] = stations[i].geometry.coordinates;
-        getOnDis.push(directDistance(X, Y, ix, iy, 'Manhattan') / 5);
+        getOnDis.push(directDistance(X, Y, ix, iy, 'Euclidean') / 5);
       }
   }
   else {
@@ -891,7 +891,7 @@ export function generateHeatMap(station, center, delta = [ 0.003,0.002335], maxD
                 let dx = X + k * i * deltaX;
                 let dy = Y + l * j * deltaY;
                 let [dis, getOnStation, getOffStation] = actualMinDistance(idList, getOnDis, dx, dy,stations,numStations,disStations);
-                let walkDis = directDistance(X, Y, dx, dy, 'Manhattan') / 5;
+                let walkDis = directDistance(X, Y, dx, dy, 'Euclidean') / 5;
                 if (walkDis <= dis) {
                   dis = walkDis;
                   getOnStation = null;
@@ -1077,7 +1077,7 @@ function actualMinDistance(idList, getOnDis, lat2, lon2,stations,numStations,dis
   //console.log(disStations);
   for (let i = 0; i < numStations; i++) {
     let [lati, loni] = stations[i].geometry.coordinates;
-    let getOffDis = directDistance(lati, loni, lat2, lon2, 'Manhattan') / 5;
+    let getOffDis = directDistance(lati, loni, lat2, lon2, 'Euclidean') / 5;
     for (let j = 0, jt = idList.length; j < jt; j++) {
       // 先走到地铁站idList[j]，乘地铁到地铁站i，然后走到终点
       //console.log('wrong',idList)
