@@ -1,5 +1,7 @@
 import { getStationCode, getSubway,getStationOpen ,getKeyInfo} from "./data.js";
 import * as utils from './utils.js';
+import {windowHeight, windowWidth} from "./utils.js";
+import {get_point_min_max} from "./utils.js";
 
 const { mainHeight, mainWidth,sideWidth } = utils;
 
@@ -251,6 +253,7 @@ async function lineStationPrepare(subwayLines,date,time){
     for (let j = i+1; j < _numStations; j++){
       if (_.isEqual(_stations[i].geometry.coordinates,_stations[j].geometry.coordinates)&& i!=j){
         let merge = _stations[i].properties.line.concat(_stations[j].properties.line);
+        merge =_.uniqWith(merge,_.isEqual);
         _stations[i].properties.line = merge;
         _stations[j].properties.line = merge;
       }
@@ -399,8 +402,7 @@ async function drawSubway(date,time) {
         setTimeout(() => {
           //console.log('当前站点',stations);
           generateHeatMap(d, d.geometry.coordinates);
-          for(let i=0;i<keyTime;i++){
-            console.log('test!!!!');
+          for(let i=0;i<keyTime.length;i++){
             generateKeyHeatMap(keyTime[i],d,d.geometry.coordinates);
           }
           setTimeout(() => {
@@ -596,7 +598,7 @@ function findPath(start, end) {
 //@history 标记历史时间点
 //@station 当前选中站点信息
 function generateKeyHeatMap(history, station, center, delta = [0.003, 0.002335], maxDis = 0.6){
-
+  console.log('test',keyInfo[history]);
   let [X, Y] = center;
   let [deltaX, deltaY] = delta;
   let stations = keyInfo[history].keyStations;
@@ -614,7 +616,11 @@ function generateKeyHeatMap(history, station, center, delta = [0.003, 0.002335],
     }
     if (!openFlag)
       station='notStation';
+    else
+      station.id=stationMap.get(station.properties.name);
   }
+  console.log(station);
+  //station.id=stationMap.get(station.properties.name);
   let idList = new Array();
   let getOnDis = new Array();
   if (station === 'notStation') {
@@ -639,14 +645,16 @@ function generateKeyHeatMap(history, station, center, delta = [0.003, 0.002335],
         if (nearFlag[k] == -1) break;
       }
     }
-    for (let i = 0; i < numStations; i++)
+    for (let i = 0; i < stationNum; i++)
       if (nearFlag[i] != -1) {
         idList.push(i);
+        console.log(stations[i]);
         let [ix, iy] = stations[i].geometry.coordinates;
         getOnDis.push(directDistance(X, Y, ix, iy, 'Manhattan') / 5);
       }
   }
   else {
+    console.log('210wrong',history,station,stations);
     idList.push(station.id);
     getOnDis.push(0);
   }
@@ -686,7 +694,54 @@ function generateKeyHeatMap(history, station, center, delta = [0.003, 0.002335],
     prevT = t;
     t = (t + 1) * 2;
   }
-  console.log('afsdfadfasdfadfasdfasdfasdfds',history,points.length);
+  //console.log('afsdfadfasdfadfasdfasdfasdfds',history,points.length);
+  let a = d3.rgb(0, 0, 0);
+  let b = d3.rgb(255, 255, 255);
+  let c = d3.rgb(47, 84, 235);
+
+  let pointColorInterpolate = d3.interpolate(a, b);
+  let lineColorInterpolate = d3.interpolate(c, b);
+
+  let currentDestination;
+  let currentD;
+  let x = d3.scaleLinear()
+      .domain(get_point_min_max(points, 0))
+      .range([mainWidth, windowWidth]);
+  let y = d3.scaleLinear()
+      .domain(get_point_min_max(points, 0))
+      .range([0, windowHeight]);
+
+  g.selectAll('circle')
+      .data(points)
+      .enter()
+      .append('circle')
+      .attr('class', 'circle')
+      .attr('cx',(d,i)=>{
+        console.log(x(d.geometry.coordinates[0]));
+        return x(d.geometry.coordinates[0]);
+      })
+      .attr('cy',(d,i)=>y(d.geometry.coordinates[1]))
+      .attr('r',10)
+      .attr('transform', `translate(${mainWidth}, -${offset})`)
+      .attr('fill', d => pointColorInterpolate(d.colorIndex));
+  console.log(points[0],"dfsdfsdfsfsdfsfdsdf");
+      //.style('visibility', 'hidden');
+
+  // dots.selectAll('circle')
+  //     .data(tailorData)
+  //     .enter()
+  //     .append('circle')
+  //     .attr('class', 'point')
+  //     .attr('fill', function(d){
+  //       if(pattern.test(d['Research Interest']))
+  //         return d3.color(schoolColor(d['Institution'])).darker(1).toString();
+  //       return d3.color(schoolColor(d['Institution'])).toString();
+  //     })
+  //     .style("fill-opacity",'0.7')
+  //     .attr('cx', (d, i) => x(parseInt(d[x_attr])))
+  //     .attr('cy', (d, i) => y(parseInt(d[y_attr])))
+  //     .attr('r',  (d, i) => radius(d[y_attr]))
+
 }
 
 export function generateHeatMap(station, center, delta = [0.003, 0.002335], maxDis = 0.6) {
@@ -974,6 +1029,7 @@ function actualMinDistance(idList, getOnDis, lat2, lon2,stations,numStations,dis
   let minDis = 100000;
   let getOnStation;
   let getOffStation;
+  //console.log(disStations);
   for (let i = 0; i < numStations; i++) {
     let [lati, loni] = stations[i].geometry.coordinates;
     let getOffDis = directDistance(lati, loni, lat2, lon2, 'Manhattan') / 5;
@@ -981,7 +1037,8 @@ function actualMinDistance(idList, getOnDis, lat2, lon2,stations,numStations,dis
       // 先走到地铁站idList[j]，乘地铁到地铁站i，然后走到终点
       //console.log('wrong',idList)
       //console.log('wrong',idList[j],i)
-      //console.log(disStations)
+      if(typeof (disStations[idList[j]])==='undefined')
+        console.log('wrong',idList, numStations, disStations, stations);
       let tmp = getOnDis[j] + disStations[idList[j]][i] + getOffDis;
       if (tmp < minDis) {
         minDis = tmp;

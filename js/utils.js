@@ -20,6 +20,20 @@ export function getLineJson() {
   });
 }
 
+export function get_point_min_max(data, attr) {
+  let min = 1e9;
+  let max = 0;
+  data.forEach(d => {
+    let v = parseInt(d.geometry.coordinates[attr]);
+    if (v > max)
+      max = v;
+    if (v < min)
+      min = v;
+  });
+  //console.log('attr', attr, 'min', min, 'max', max);
+
+  return [Math.max(-10000,min), max];
+}
 export const colors = {
   "S1线": "#b35a1f",
   "地铁1号线": "#cc0000",
