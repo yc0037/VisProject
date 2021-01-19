@@ -16,7 +16,7 @@ export async function getSubway() {
   return subwayLines;
 }
 
-// 暂时不用
+//
 export async function getStationOpen() {
     const stationOpentimes =
         await fetch('./data/subwayopen.json')

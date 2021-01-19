@@ -20,9 +20,8 @@ export async function initBottom() {
   let timeScale = d3.scaleLinear()
                     .domain([minYear, maxYear])
                     .range([outerMargin + windowWidth * 0.1, outerMargin + windowWidth * 0.9]);
-  // let timeAxis = d3.axisBottom(timeScale)
-  //                  .ticks(timeData.length)
-  //                  .tickFormat(d => d);
+   let timeAxis = d3.axisBottom(timeScale)
+                    .tickFormat(d => d);
   // let valueScale = d3.scaleLinear()
   //                    .domain([0, d3.max(timeData, d => d.value)])
   //                    .range([windowHeight * 0.16, windowHeight * 0.01]);

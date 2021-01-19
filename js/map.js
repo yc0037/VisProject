@@ -35,27 +35,41 @@ let date=2020.83;//当前年月
 let time;     //当前时间
 let isHeatmap;//判断是否现在显示有热力图
 const maskTime = 200;
+let subwayLines;
+let allLinks; //保存初始的所有线路
 
+//更改年月或日期调用函数
 export const updateMap = _.debounce(_updateMap,50)
 
 async function _updateMap(_date,_time){
+  //逻辑有问题暂时没有修改
   if(isHeatmap===true)
   {
     normalMode();
     isHeatmap=false;
   }
+  normalMode();
+  //根据当前年月和时间维护numStations,links,stations,stationMap
+  await lineStationPrepare(subwayLines,date,time);
   date=_date;
-  await initMain(date,time);
+  await drawSubway(date,time);
 }
 
 export async function initMain(date,time) {
+  createLoadingMask();
+  //读取地铁站基本信息
+  subwayLines = await getSubway();
+  //读取地铁站开通时间
+  openData = await getStationOpen();
+  //根据当前年月和时间生成numStations,links,stations,stationMap
+  await lineStationPrepare(subwayLines,date,time);
+
   geoFeature = await fetch(beijingMap)
     .then(response => response.json());
   timeData = await fetch('./data/subwaytime.json')
     .then(response => response.json());
   console.log('timedata',timeData);
-  openData = await getStationOpen();
-  //console.log('金安桥',openData['金安桥']);
+
   console.log('date',date);
   geoprojection = d3.geoTransverseMercator().angle(231)
     .fitExtent([[-mainWidth, -mainHeight * 3.5], 
@@ -64,8 +78,8 @@ export async function initMain(date,time) {
   geoScale = geoprojection.scale();
   offset = geoScale / 200;
   geopath = d3.geoPath(geoprojection);
+
   mainSvg = d3.select('#main').append('svg');
-  createLoadingMask();
   map = mainSvg
     .style('width', '100%')
     .style('height', '100%')
@@ -96,7 +110,26 @@ export async function initMain(date,time) {
           }, maskTime);
         }
       });
+
+  g = d3.select('#main-svg')
+      .select('g');
+
+  //生成线路的底色
+  await g.selectAll('.all-link')
+      .data(allLinks)
+      .enter().append('path')
+      .attr('class', 'all-link')
+      .attr('id', d => `subway-line-${d.properties.name}`)
+      .attr('d', geopath)
+      .attr('transform', `translate(0, -${offset})`)
+      .attr('fill', 'transparent')
+      .attr('opacity','0.3')
+      .attr('stroke', d => d3.rgb(d.properties.color).brighter(0).toString())
+      .attr('stroke-width', 1)
+      .attr("pointer-events", 'none');
+
   await drawSubway(date,time);
+
   const zoom = d3.zoom().on('zoom', e => {
     currentScale = e.transform.k;
     currentTranslate = e.transform;
@@ -112,7 +145,9 @@ export async function initMain(date,time) {
         .attr('d', geopath.pointRadius(1.3 * geoScale / 40000));
     }
   });
+
   mainSvg.call(zoom);
+
   drawLegend();
 }
 
@@ -251,21 +286,26 @@ async function lineStationPrepare(subwayLines,date,time){
     }
     links.push(line);
   }
-  console.log('link',links)
+  console.log('link',links);
+
+  //最全线路记录
+  if(date>=2020.8)
+    allLinks=links;
 }
 
 async function drawSubway(date,time) {
 
-  //读取地铁站基本信息
-  const subwayLines = await getSubway();
   //根据当前年月和时间维护numStations,links,stations,stationMap
   await lineStationPrepare(subwayLines,date,time);
 
   disStations = calcDistForStations(links);
-  
-  g = d3.select('#main-svg')
-    .select('g')
-  g.selectAll('.path-link')
+  console.log('delete!',links);
+  //原先画的线路图，路径点，站点先都删除
+  await g.selectAll('.path-link').remove();
+  await g.selectAll('.path-point').remove();
+  await g.selectAll('.fake-point').remove();
+
+  await g.selectAll('.path-link')
     .data(links)
     .enter().append('path')
       .attr('class', 'path-link')
@@ -276,7 +316,7 @@ async function drawSubway(date,time) {
       .attr('stroke', d => d.properties.color)
       .attr('stroke-width', 1.5)
       .attr("pointer-events", 'none');
-  g.selectAll('.path-point')
+  await g.selectAll('.path-point')
     .data(stations)
     .enter().append('path')
       .attr('class', 'path-point')
@@ -287,7 +327,7 @@ async function drawSubway(date,time) {
       .attr('stroke-width', 0.2)
       .attr('id', d => d.properties.name)
       .attr("pointer-events", 'none');
-  g.selectAll('.fake-point')
+  await g.selectAll('.fake-point')
     .data(stations)
     .enter().append('path')
       .attr('class', 'fake-point')
@@ -328,7 +368,7 @@ async function drawSubway(date,time) {
       .on('click', function(e, d) {
         showLoadingMask();
         setTimeout(() => {
-          //console.log(316,d);
+          console.log('当前站点',stations);
           generateHeatMap(d, d.geometry.coordinates);
           setTimeout(() => {
             hideLoadingMask();
@@ -529,16 +569,22 @@ export function generateHeatMap(station, center, delta = [0.003, 0.002335], maxD
       .attr('stroke-width', 0.2);
     currentStation = null;
   }
-  let minDate=3000;
-  for (let j in station.properties.open){
-    console.log('current!!',station.properties.open[j],j);
-    if(station.properties.open[j]<minDate)
-      minDate=station.properties.open[j];
-  }
-  if (minDate>date)
-    station='notStation';
 
-  console.log('current!!',station);
+  //判断当前选中车站在当前时刻是否开通
+  if(station!='notStation'){
+    let minDate=3000;
+    for (let j in station.properties.open){
+      console.log('current!!',station.properties.open[j],j);
+      if(station.properties.open[j]<minDate)
+        minDate=station.properties.open[j];
+    }
+    if (minDate>date)
+      station='notStation';
+    console.log(station,'now!')
+    console.log('current!!',date,minDate);
+  }
+
+
   d3.select('#start-point').remove();
   g.selectAll('.fake-point')
     .attr('d', geopath.pointRadius(1.3 * geoScale / 40000));
@@ -566,7 +612,7 @@ export function generateHeatMap(station, center, delta = [0.003, 0.002335], maxD
 
   let idList = new Array();
   let getOnDis = new Array();
-  if (station == 'notStation') {
+  if (station === 'notStation') {
     // 找离起点最近的几个地铁站，记在idList里
     let nearFlag = new Array();
     for (let k = 0; k < numStations; k++) {
