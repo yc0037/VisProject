@@ -21,7 +21,9 @@ export async function initBottom() {
                     .domain([minYear, maxYear])
                     .range([outerMargin + windowWidth * 0.1, outerMargin + windowWidth * 0.9]);
    let timeAxis = d3.axisBottom(timeScale)
+                    .ticks(10)
                     .tickFormat(d => d);
+
   // let valueScale = d3.scaleLinear()
   //                    .domain([0, d3.max(timeData, d => d.value)])
   //                    .range([windowHeight * 0.16, windowHeight * 0.01]);
@@ -32,6 +34,10 @@ export async function initBottom() {
                       .attr('id', 'bottom-container')
                       .attr('height', '100%')
                       .attr('width', '100%');
+  let yearCordi =bottomSvg.append('g')
+      .attr('transform', `translate(${0}, ${windowHeight*0.02})`)
+      .call(timeAxis)
+      .attr('font-size', '0.8rem');
   // bottomSvg.append('g')
   //       .attr('transform', `translate(0, ${0.16 * windowHeight})`)
   //       .call(timeAxis)
