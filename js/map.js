@@ -143,7 +143,6 @@ export async function initMain(_date,_time) {
       .data(allLinks)
       .enter().append('path')
       .attr('class', 'all-link')
-      .attr('id', d => `subway-line-${d.properties.name}`)
       .attr('d', geopath)
       .attr('transform', `translate(0, -${offset})`)
       .attr('fill', 'transparent')
@@ -377,7 +376,10 @@ async function drawSubway(date,time) {
           .attr('d', geopath.pointRadius(2 * geoScale / 40000));
         d3.select(`#${d.properties.name}-fake`)
           .attr('d', geopath.pointRadius(Math.max(2, 4 / Math.sqrt(currentScale)) * geoScale / 40000));
-        let content = `name: ${d.properties.name}, id: ${d.id}, line:${d.properties.line}`;
+        let content =
+            `<span class="tooltip-title">${d.properties.name}</span><br />
+            <span class="tooltip-line">${d.properties.line}</span><br />`;
+            // id: ${d.id}`;
         d3.select('#main-tooltip')
           .html(content)
           .style('top', `${e.clientY + 3}px`)
@@ -439,16 +441,14 @@ function drawLegend() {
         .style('background-color', '#dddddddd');
       d3.select(`#subway-line-${key}`)
         .attr('stroke', d3.color(colors[key]).darker().toString())
-        .attr('stroke-width', 2.5)
-        .raise();
+        .attr('stroke-width', 2);
     });
     legend.on('mouseout', e => {
       d3.select(`#legend-${key}`)
         .style('background-color', '#eeeeeedd');
       d3.select(`#subway-line-${key}`)
         .attr('stroke', colors[key])
-        .attr('stroke-width', 1.5)
-        .lower();
+        .attr('stroke-width', 1.5);
       console.log('wrong!');
     });
     legend.on('click')
@@ -758,7 +758,7 @@ function keyHeatMap(){
     //     .attr('r',  (d, i) => radius(d[y_attr]))
   }
 }
-export function generateHeatMap(station, center, delta = [0.003, 0.002335], maxDis = 0.6) {
+export function generateHeatMap(station, center, delta = [2 * 0.003, 2 * 0.002335], maxDis = 0.6) {
   console.log('current!!',station);
   isHeatmap = true;
   detailMode = true;
@@ -870,7 +870,7 @@ export function generateHeatMap(station, center, delta = [0.003, 0.002335], maxD
                 if (dis <= maxDis) {
                   let point = utils.getPointJson();
                   point.geometry.coordinates = [dx, dy];
-                  point.colorIndex = dis / maxDis;
+                  point.colorIndex = dis * dis / maxDis / maxDis;
                   point.getOn = getOnStation;
                   point.getOff = getOffStation;
                   points.push(point);
