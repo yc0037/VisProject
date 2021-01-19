@@ -6,36 +6,35 @@ import {updateMap} from "./map.js";
 const { windowHeight, windowWidth, outerMargin } = utils;
 
 export async function initBottom() {
-  //let timeData = await getStationOpen();
+
   let oldest = {'year':1971,'month':1};
   let newest = {'year':2020,'month':11};
-  /*
-  for(let station in timeData){
-    for(let line in timeData[station]){
-      timeData[station][line].split('.')
-    }
-  }
-  */
+
   let [minYear, maxYear] = [oldest['year']+(oldest['month']-1)/12-1, newest['year']+(newest['month']-1)/12];
-  let timeScale = d3.scaleLinear()
+  let dateScale = d3.scaleLinear()
                     .domain([minYear, maxYear])
                     .range([outerMargin + windowWidth * 0.1, outerMargin + windowWidth * 0.9]);
-   let timeAxis = d3.axisBottom(timeScale)
+  let dateAxis = d3.axisBottom(dateScale)
                     .ticks(10)
                     .tickFormat(d => d);
+  let timeScale = d3.scaleLinear()
+                    .domain([0, 24])
+                    .range([outerMargin + windowWidth * 0.1, outerMargin + windowWidth * 0.9]);
 
-  // let valueScale = d3.scaleLinear()
-  //                    .domain([0, d3.max(timeData, d => d.value)])
-  //                    .range([windowHeight * 0.16, windowHeight * 0.01]);
-  // let valueAxis = d3.axisLeft(valueScale)
-  //                   .ticks(Math.ceil(d3.max(timeData, d => d.value) / 100))
-  //                   .tickFormat(d => d);
+  let timeAxis = d3.axisBottom(timeScale)
+                    .ticks(12)
+                    .tickFormat(d => d);
+
   let bottomSvg = d3.select('#bottom').append('svg')
                       .attr('id', 'bottom-container')
                       .attr('height', '100%')
                       .attr('width', '100%');
   let yearCordi =bottomSvg.append('g')
       .attr('transform', `translate(${0}, ${windowHeight*0.02})`)
+      .call(dateAxis)
+      .attr('font-size', '0.8rem');
+  let timeCordi =bottomSvg.append('g')
+      .attr('transform', `translate(${0}, ${windowHeight*0.068})`)
       .call(timeAxis)
       .attr('font-size', '0.8rem');
   // bottomSvg.append('g')
@@ -98,12 +97,12 @@ export async function initBottom() {
   //     const tooltip = d3.select('#bottom-tooltip');
   //     tooltip.style('visibility', 'hidden');
   //   });
-  drawDrag(minYear, maxYear, timeScale(minYear));
+  drawDrag(minYear, maxYear, dateScale(minYear));
 }
-
-let currentYear;//现在年月
-let currentMonth;
-let currentTime;//现在时间
+//全局变量初值
+let currentYear=2020;//现在年月
+let currentMonth=11;
+let currentTime=12.067;//现在时间
 function drawDrag(minYear, maxYear, offset) {
   const bottomContainer = d3.select('#bottom-container');
   const xMin = offset;
@@ -152,8 +151,8 @@ function drawDrag(minYear, maxYear, offset) {
     currentMonth=getDate(getX(e.x)).split('/')[1];
     d3.select('#date-text').text(getDate(getX(e.x)));
     if (text !== d3.select('#date-text').text()){
-      updateSide('date', getDate(getX(e.x)));
-      updateMap(parseInt(currentYear)+(currentMonth-1)/12,0);
+      //updateSide('date', getDate(getX(e.x)));
+      updateMap(parseInt(currentYear)+(currentMonth-1)/12,currentTime);
     }
   })
   .on('end', endDrag);
@@ -162,9 +161,11 @@ function drawDrag(minYear, maxYear, offset) {
   .on('drag', (e) => {
     slideBlock.attr('x', getX(e.x));
     const text = d3.select('#time-text').text();
+    currentTime=parseInt(getTime(getX(e.x)).split(':')[0])+getTime(getX(e.x)).split(':')[1]/60;
     d3.select('#time-text').text(getTime(getX(e.x)));
     if (text !== d3.select('#time-text').text()){
-      updateSide('time', getTime(getX(e.x)));
+      updateMap(parseInt(currentYear)+(currentMonth-1)/12,currentTime);
+      //updateSide('time', getTime(getX(e.x)));
     }
   })
   .on('end', endDrag);
@@ -176,7 +177,7 @@ function drawDrag(minYear, maxYear, offset) {
     .style('stroke', '#061178')
     .style('stroke-width', '1.5px');
   bottomContainer.append('rect')
-    .attr('x', xMin)
+    .attr('x', xMax)
     .attr('y',yDate - 10)
     .attr('width', 8)
     .attr('height', 20)
@@ -188,7 +189,7 @@ function drawDrag(minYear, maxYear, offset) {
     .attr('y', yDate + 5)
     .attr('font-size', '12px')
     .style('user-select', 'none')
-    .text(getDate(xMin));
+    .text(getDate(xMax));
   bottomContainer.append('line')
     .attr('x1', xMin)
     .attr('x2', xMax)
@@ -197,7 +198,7 @@ function drawDrag(minYear, maxYear, offset) {
     .style('stroke', '#061178')
     .style('stroke-width', '1.5px');
   bottomContainer.append('rect')
-    .attr('x', xMin)
+    .attr('x', (xMax+xMin)/2)
     .attr('y', yTime - 10)
     .attr('width', 8)
     .attr('height', 20)
@@ -209,5 +210,5 @@ function drawDrag(minYear, maxYear, offset) {
     .attr('y', yTime + 5)
     .attr('font-size', '12px')
     .style('user-select', 'none')
-    .text(getTime(xMin));
+    .text(getTime((xMax+xMin)/2));
 }
