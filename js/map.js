@@ -54,7 +54,7 @@ async function _updateMap(_date,_time){
     isHeatmap=false;
   }
   //normalMode();
-
+  pointG.selectAll('circle').remove();
   date=_date;
   time=_time;
   //根据当前年月和时间维护numStations,links,stations,stationMap
@@ -123,7 +123,7 @@ export async function initMain(_date,_time) {
           setTimeout(() => {
             let [lat, lon] = ClientToCoordinate(e.clientX, e.clientY);
             generateHeatMap('notStation', [lat, lon]);
-            for(let i=0;i<keyTime;i++)
+            for(let i=0;i<keyTime.length;i++)
               generateKeyHeatMap(keyTime[i],'notStation',[lat, lon]);
             keyHeatMap();
             setTimeout(() => {
@@ -203,6 +203,7 @@ export function showLoadingMask() {
 }
 
 const appearTimeInterpolate = d3.interpolate(10, 350);
+
 export function showHeatPoint() {
   g.selectAll('.heat-point').each((d, i, nodes) => {
     setTimeout(() => {
@@ -449,7 +450,7 @@ function drawLegend() {
       d3.select(`#subway-line-${key}`)
         .attr('stroke', colors[key])
         .attr('stroke-width', 1.5);
-      console.log('wrong!');
+      //console.log('wrong!');
     });
     legend.on('click')
   }
@@ -601,7 +602,7 @@ function findPath(start, end) {
 
 //@history 标记历史时间点
 //@station 当前选中站点信息
-function generateKeyHeatMap(history, station, center, delta = [0.03, 0.02335], maxDis = 0.6){
+function generateKeyHeatMap(history, station, center, delta = [0.003, 0.002335], maxDis = 0.6){
   console.log('test',keyInfo[history]);
   let [X, Y] = center;
   let [deltaX, deltaY] = delta;
@@ -699,7 +700,7 @@ function generateKeyHeatMap(history, station, center, delta = [0.03, 0.02335], m
     t = (t + 1) * 2;
   }
   keyInfo[history].keyPoints=points;
-
+  console.log('pointsnum',history,points.length);
 }
 
 //将关键时间点的热力图画出
@@ -708,38 +709,42 @@ function keyHeatMap(){
   let b = d3.rgb(255, 255, 255);
   let c = d3.rgb(47, 84, 235);
   let allPoints=[];
+  //分成四块区域
+  let offset = {1980:[0,50],2000:[(windowWidth-mainWidth)/2,50],2010:[0,300],2020:[(windowWidth-mainWidth)/2,300]};
   let pointColorInterpolate = d3.interpolate(a, b);
 
   for(let keyTime in keyInfo) {
+    console.log('pointsnum++',keyTime,keyInfo[keyTime].keyPoints.length);
     allPoints = allPoints.concat(allPoints,keyInfo[keyTime].keyPoints);
   }
 
-  console.log('gpmm', get_point_min_max(allPoints, 0));
+  //console.log('gpmm', get_point_min_max(allPoints, 0));
 
     let x = d3.scaleLinear()
         .domain(get_point_min_max(allPoints, 0))
-        .range([0, windowWidth]);
+        .range([0, (windowWidth-mainWidth)/2]);
 
     let y = d3.scaleLinear()
         .domain(get_point_min_max(allPoints, 1))
-        .range([0, windowHeight]);
+        .range([0, 250]);
 
   for(let keyTime in keyInfo){
     let points = keyInfo[keyTime].keyPoints;
-    pointG.selectAll('circle')
+    let keyTimeSvg = pointG.append('g');
+    keyTimeSvg.selectAll('circle')
         .data(points)
         .enter()
         .append('circle')
-        .attr('class', 'circle')
-        .attr('cx',(d,i)=>{
-          console.log(x(d.geometry.coordinates[0]));
-          return x(d.geometry.coordinates[0]);
-        })
+        .attr('class', keyTime+'circle')
+        .attr('cx',(d,i)=>x(d.geometry.coordinates[0]))
         .attr('cy',(d,i)=>y(d.geometry.coordinates[1]))
-        .attr('r',10)
-        // .attr('transform', `translate(${mainWidth}, -${offset})`)
+        .attr('r',3)
+        .attr('transform', `translate(${offset[keyTime][0]}, ${offset[keyTime][1]})`)
         .attr('fill', d => pointColorInterpolate(d.colorIndex));
-    console.log(points[0],"735行");
+    keyTimeSvg.append('text')
+        .text(keyTime)
+        .attr('font-size','1rem')
+        .attr('transform', `translate(${offset[keyTime][0]}, ${offset[keyTime][1]})`);
     //.style('visibility', 'hidden');
 
     // dots.selectAll('circle')
@@ -758,7 +763,7 @@ function keyHeatMap(){
     //     .attr('r',  (d, i) => radius(d[y_attr]))
   }
 }
-export function generateHeatMap(station, center, delta = [2 * 0.003, 2 * 0.002335], maxDis = 0.6) {
+export function generateHeatMap(station, center, delta = [ 0.003,0.002335], maxDis = 0.6) {
   console.log('current!!',station);
   isHeatmap = true;
   detailMode = true;
@@ -1008,6 +1013,7 @@ function normalMode() {
       .attr('stroke-width', 0.2);
     currentStation = null;
   }
+  pointG.selectAll('circle').remove();
   d3.select('#start-point').remove();
   g.select('#getOn-line').remove();
   g.select('#getOff-line').remove();
