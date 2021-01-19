@@ -39,6 +39,7 @@ let isHeatmap;//判断是否现在显示有热力图
 const maskTime = 200;
 let subwayLines;
 let allLinks; //保存初始的所有线路
+let gAllLink;
 let keyTime=[1980,2000,2010,2020];//关键帧时间
 let keyInfo={};
 
@@ -136,11 +137,10 @@ export async function initMain(_date,_time) {
       .select('g');
 
   //生成线路的底色
-  await g.selectAll('.all-link')
+  gAllLink = g.selectAll('.all-link')
       .data(allLinks)
       .enter().append('path')
       .attr('class', 'all-link')
-      .attr('id', d => `subway-line-${d.properties.name}`)
       .attr('d', geopath)
       .attr('transform', `translate(0, -${offset})`)
       .attr('fill', 'transparent')
@@ -416,7 +416,7 @@ async function drawSubway(date,time) {
     console.log('西单到宣武门: ', directDistance(116.374072, 39.907383, 116.374314, 39.899765, 'Euclidean')); // 828m
 }
 
-function drawLegend() {
+async function drawLegend() {
   legends = d3.select('#main')
     .append('div').attr('id', 'map-legend-container');
   const colors = utils.colors;
@@ -437,17 +437,15 @@ function drawLegend() {
         .attr('stroke', d3.color(colors[key]).darker().toString())
         .attr('stroke-width', 2.5)
         .raise();
-    });
-    legend.on('mouseout', e => {
+    })
+    .on('mouseout', function() {
       d3.select(`#legend-${key}`)
         .style('background-color', '#eeeeeedd');
       d3.select(`#subway-line-${key}`)
-        .attr('stroke', colors[key])
+        .attr('stroke', d3.color(colors[key]).toString())
         .attr('stroke-width', 1.5)
         .lower();
-      console.log('wrong!');
     });
-    legend.on('click')
   }
 }
 
