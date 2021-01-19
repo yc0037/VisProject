@@ -26,7 +26,8 @@ export async function getKeyInfo(date){
         keyLabel:[],
         keyPathStations:[],
         keyAdjStations:[],
-        keyDisStations:[]
+        keyDisStations:[],
+        keyPoints:[]
     }
     return keyInfo;
 }

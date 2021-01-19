@@ -18,6 +18,7 @@ let currentTranslate = d3.zoomIdentity;
 let currentStation;
 let mainSvg;
 let g;
+let pointG;
 let map;
 let offset;
 let stations;
@@ -39,7 +40,6 @@ let isHeatmap;//判断是否现在显示有热力图
 const maskTime = 200;
 let subwayLines;
 let allLinks; //保存初始的所有线路
-let gAllLink;
 let keyTime=[1980,2000,2010,2020];//关键帧时间
 let keyInfo={};
 
@@ -125,6 +125,7 @@ export async function initMain(_date,_time) {
             generateHeatMap('notStation', [lat, lon]);
             for(let i=0;i<keyTime;i++)
               generateKeyHeatMap(keyTime[i],'notStation',[lat, lon]);
+            keyHeatMap();
             setTimeout(() => {
               hideLoadingMask();
               setTimeout(() => showHeatPoint(), maskTime + 4);
@@ -135,12 +136,14 @@ export async function initMain(_date,_time) {
 
   g = d3.select('#main-svg')
       .select('g');
-
+  pointG = d3.select('#side').select('svg')
+      .append('g');
   //生成线路的底色
-  gAllLink = g.selectAll('.all-link')
+  await g.selectAll('.all-link')
       .data(allLinks)
       .enter().append('path')
       .attr('class', 'all-link')
+      .attr('id', d => `subway-line-${d.properties.name}`)
       .attr('d', geopath)
       .attr('transform', `translate(0, -${offset})`)
       .attr('fill', 'transparent')
@@ -405,6 +408,7 @@ async function drawSubway(date,time) {
           for(let i=0;i<keyTime.length;i++){
             generateKeyHeatMap(keyTime[i],d,d.geometry.coordinates);
           }
+          keyHeatMap();
           setTimeout(() => {
             hideLoadingMask();
             setTimeout(() => showHeatPoint(), maskTime + 4);
@@ -416,7 +420,7 @@ async function drawSubway(date,time) {
     console.log('西单到宣武门: ', directDistance(116.374072, 39.907383, 116.374314, 39.899765, 'Euclidean')); // 828m
 }
 
-async function drawLegend() {
+function drawLegend() {
   legends = d3.select('#main')
     .append('div').attr('id', 'map-legend-container');
   const colors = utils.colors;
@@ -437,15 +441,17 @@ async function drawLegend() {
         .attr('stroke', d3.color(colors[key]).darker().toString())
         .attr('stroke-width', 2.5)
         .raise();
-    })
-    .on('mouseout', function() {
+    });
+    legend.on('mouseout', e => {
       d3.select(`#legend-${key}`)
         .style('background-color', '#eeeeeedd');
       d3.select(`#subway-line-${key}`)
-        .attr('stroke', d3.color(colors[key]).toString())
+        .attr('stroke', colors[key])
         .attr('stroke-width', 1.5)
         .lower();
+      console.log('wrong!');
     });
+    legend.on('click')
   }
 }
 
@@ -595,7 +601,7 @@ function findPath(start, end) {
 
 //@history 标记历史时间点
 //@station 当前选中站点信息
-function generateKeyHeatMap(history, station, center, delta = [0.003, 0.002335], maxDis = 0.6){
+function generateKeyHeatMap(history, station, center, delta = [0.03, 0.02335], maxDis = 0.6){
   console.log('test',keyInfo[history]);
   let [X, Y] = center;
   let [deltaX, deltaY] = delta;
@@ -692,56 +698,66 @@ function generateKeyHeatMap(history, station, center, delta = [0.003, 0.002335],
     prevT = t;
     t = (t + 1) * 2;
   }
-  //console.log('afsdfadfasdfadfasdfasdfasdfds',history,points.length);
-  let a = d3.rgb(0, 0, 0);
-  let b = d3.rgb(255, 255, 255);
-  let c = d3.rgb(47, 84, 235);
-
-  let pointColorInterpolate = d3.interpolate(a, b);
-  let lineColorInterpolate = d3.interpolate(c, b);
-
-  let currentDestination;
-  let currentD;
-  let x = d3.scaleLinear()
-      .domain(get_point_min_max(points, 0))
-      .range([mainWidth, windowWidth]);
-  let y = d3.scaleLinear()
-      .domain(get_point_min_max(points, 0))
-      .range([0, windowHeight]);
-
-  g.selectAll('circle')
-      .data(points)
-      .enter()
-      .append('circle')
-      .attr('class', 'circle')
-      .attr('cx',(d,i)=>{
-        console.log(x(d.geometry.coordinates[0]));
-        return x(d.geometry.coordinates[0]);
-      })
-      .attr('cy',(d,i)=>y(d.geometry.coordinates[1]))
-      .attr('r',10)
-      .attr('transform', `translate(${mainWidth}, -${offset})`)
-      .attr('fill', d => pointColorInterpolate(d.colorIndex));
-  console.log(points[0],"dfsdfsdfsfsdfsfdsdf");
-      //.style('visibility', 'hidden');
-
-  // dots.selectAll('circle')
-  //     .data(tailorData)
-  //     .enter()
-  //     .append('circle')
-  //     .attr('class', 'point')
-  //     .attr('fill', function(d){
-  //       if(pattern.test(d['Research Interest']))
-  //         return d3.color(schoolColor(d['Institution'])).darker(1).toString();
-  //       return d3.color(schoolColor(d['Institution'])).toString();
-  //     })
-  //     .style("fill-opacity",'0.7')
-  //     .attr('cx', (d, i) => x(parseInt(d[x_attr])))
-  //     .attr('cy', (d, i) => y(parseInt(d[y_attr])))
-  //     .attr('r',  (d, i) => radius(d[y_attr]))
+  keyInfo[history].keyPoints=points;
 
 }
 
+//将关键时间点的热力图画出
+function keyHeatMap(){
+  let a = d3.rgb(0, 0, 0);
+  let b = d3.rgb(255, 255, 255);
+  let c = d3.rgb(47, 84, 235);
+  let allPoints=[];
+  let pointColorInterpolate = d3.interpolate(a, b);
+
+  for(let keyTime in keyInfo) {
+    allPoints = allPoints.concat(allPoints,keyInfo[keyTime].keyPoints);
+  }
+
+  console.log('gpmm', get_point_min_max(allPoints, 0));
+
+    let x = d3.scaleLinear()
+        .domain(get_point_min_max(allPoints, 0))
+        .range([0, windowWidth]);
+
+    let y = d3.scaleLinear()
+        .domain(get_point_min_max(allPoints, 1))
+        .range([0, windowHeight]);
+
+  for(let keyTime in keyInfo){
+    let points = keyInfo[keyTime].keyPoints;
+    pointG.selectAll('circle')
+        .data(points)
+        .enter()
+        .append('circle')
+        .attr('class', 'circle')
+        .attr('cx',(d,i)=>{
+          console.log(x(d.geometry.coordinates[0]));
+          return x(d.geometry.coordinates[0]);
+        })
+        .attr('cy',(d,i)=>y(d.geometry.coordinates[1]))
+        .attr('r',10)
+        // .attr('transform', `translate(${mainWidth}, -${offset})`)
+        .attr('fill', d => pointColorInterpolate(d.colorIndex));
+    console.log(points[0],"735行");
+    //.style('visibility', 'hidden');
+
+    // dots.selectAll('circle')
+    //     .data(tailorData)
+    //     .enter()
+    //     .append('circle')
+    //     .attr('class', 'point')
+    //     .attr('fill', function(d){
+    //       if(pattern.test(d['Research Interest']))
+    //         return d3.color(schoolColor(d['Institution'])).darker(1).toString();
+    //       return d3.color(schoolColor(d['Institution'])).toString();
+    //     })
+    //     .style("fill-opacity",'0.7')
+    //     .attr('cx', (d, i) => x(parseInt(d[x_attr])))
+    //     .attr('cy', (d, i) => y(parseInt(d[y_attr])))
+    //     .attr('r',  (d, i) => radius(d[y_attr]))
+  }
+}
 export function generateHeatMap(station, center, delta = [0.003, 0.002335], maxDis = 0.6) {
   console.log('current!!',station);
   isHeatmap = true;

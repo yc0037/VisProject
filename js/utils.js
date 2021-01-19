@@ -24,7 +24,7 @@ export function get_point_min_max(data, attr) {
   let min = 1e9;
   let max = 0;
   data.forEach(d => {
-    let v = parseInt(d.geometry.coordinates[attr]);
+    let v = parseFloat(d.geometry.coordinates[attr]);
     if (v > max)
       max = v;
     if (v < min)
