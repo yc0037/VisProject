@@ -42,7 +42,7 @@ let subwayLines;
 let allLinks; //保存初始的所有线路
 const keyTime=[1999, 2006, 2013, 2020];//关键帧时间
 let keyInfo={};
-let _maxDis = 1.5;
+let _maxDis = 1;
 
 export function setMaxDis(val) {
   _maxDis = val;
@@ -224,20 +224,31 @@ export function showLoadingMask() {
     .style('opacity', 1);
 }
 
-// const appearTimeInterpolate = d3.interpolate(10, 200);
+const appearTimeInterpolate = d3.interpolate(10, 200);
 
 export function showHeatPoint() {
+  // console.log('##!!## length', g.selectAll('.heat-point')._groups[0].length);
+  if (g.selectAll('.heat-point')._groups[0].length > 3000) {
+    g.selectAll('.heat-point').each((d, i, nodes) => {
+      d3.select(nodes[i])
+        .style('visibility', 'visible');
+      d3.select(nodes[i]).transition().ease(d3.easePolyOut).duration(600)
+        .attr('d', geopath.pointRadius(2.6 * geoScale / 40000));
+    });
+    g.selectAll('.heat-line').transition().duration(500).style('opacity', 1);
+    return;
+  }
   g.selectAll('.heat-point').each((d, i, nodes) => {
-    // setTimeout(() => {
+    setTimeout(() => {
       d3.select(nodes[i])
         .style('visibility', 'visible');
       d3.select(nodes[i]).transition().ease(d3.easePolyOut).duration(120)
         .attr('d', geopath.pointRadius(2.6 * geoScale / 40000));
-    // }, appearTimeInterpolate(d.colorIndex));
+    }, appearTimeInterpolate(d.colorIndex));
   });
-  // setTimeout(() => {
+  setTimeout(() => {
     g.selectAll('.heat-line').transition().duration(500).style('opacity', 1);
-  // }, 205);
+  }, 205);
 }
 
 async function lineStationPrepare(subwayLines,date,time){
@@ -751,7 +762,8 @@ function initKeyHeatMap() {
   let offset = {1999:[0,50], 2006:[(windowWidth-mainWidth)/2,50], 2013:[0,300], 2020:[(windowWidth-mainWidth)/2,300]};
 
   for(let keyTime in keyInfo){
-    let keyTimeSvg = pointG.append('g').attr('id', `key-points-${keyTime}`);
+    let keyTimeSvg = pointG.append('g')
+        .attr('id', `key-points-${keyTime}`);
     keyTimeSvg.append('text')
         .text(keyTime)
         .attr('font-size','0.8rem')

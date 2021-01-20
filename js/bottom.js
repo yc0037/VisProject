@@ -198,7 +198,7 @@ function drawDrag(minYear, maxYear, offset) {
     .style('stroke', '#061178')
     .style('stroke-width', '1.5px');
   bottomContainer.append('rect')
-    .attr('x', xMax)
+    .attr('x', xMin + (xMax - xMin) * 0.625)
     .attr('y', yTime - 10)
     .attr('width', 8)
     .attr('height', 20)
@@ -210,5 +210,5 @@ function drawDrag(minYear, maxYear, offset) {
     .attr('y', yTime + 5)
     .attr('font-size', '12px')
     .style('user-select', 'none')
-    .text(getTime(xMax));
+    .text(getTime(xMin + (xMax - xMin) * 0.625));
 }
