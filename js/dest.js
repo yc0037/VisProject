@@ -9,7 +9,7 @@ const maskTime = 200;
 d3.select('#side').select('svg').remove();
 
 let sideSvg = d3.select('#side-up')
-let main_g = d3.select('#main-svg');
+
 
 let dest = sideSvg.append('div').attr('id', 'dest-container');
 
@@ -99,9 +99,40 @@ export async function drawDest(cellWidth){
             .attr('color', '#A0C53E');
         dest1.on('mouseover', e => {
             dest1.attr('font-size', 13);
+            let main_g = d3.select('#main-svg').select('g');
+            let subwayLines_2 = subwayLines[dest_class[i]];
+            let this_g = main_g.append('div')
+                .attr('id','select-point-1');
+            console.log(subwayLines_2.length);
+            for(let j = 0; j < subwayLines_2.length;j++){
+                let lat1 = subwayLines_2[j]['x'];
+                let lon1 = subwayLines_2[j]['y'];
+                let startPoint = utils.getPointJson();
+                startPoint.geometry.coordinates = [lat1, lon1];
+                this_g.append('path')
+                    .datum(startPoint)
+                    .attr('class', 'select-point-1')
+                    .attr('f', '#ff0000')
+                    .attr('pointRadius',100)
+                    .attr("pointer-events", 'none')
+                    .attr('transform', `translate(0, -${offset})`)
+                    .attr('d', geopath.pointRadius(1.3 * geoScale / 40000));
+                // let c = geoprojection([lat1,lon1]);
+                // let content =
+                //     `<span class="tooltip-title">${subwayLines_2[j]['name']}</span>`;
+                // // id: ${d.id}`;
+                // console.log(c);
+                // d3.select('#main-tooltip').append('div')
+                //     .html(content)
+                //     .style('top', `${c[1]-offset}px`)
+                //     .style('left', `${c[0]}px`)
+                //     .style('visibility', 'visible');
+            }
         });
         dest1.on('mouseout', e => {
             dest1.attr('font-size', 12);
+            document.getElementById('select-point-1').remove();
+            // d3.select('.tooltip-title').remove();
         });
         let flag = 0;
         dest1.on('click', e => {
@@ -179,66 +210,43 @@ export async function drawDest(cellWidth){
                         dest2.attr('font-size', 14);
                         let startPoint = utils.getPointJson();
                         startPoint.geometry.coordinates = [lat, lon];
-                        main_g
-                            .selectAll('circle')
-                            .data(startPoint.geometry.coordinates)
-                            .enter()
-                            .append('circle')
-                            .attr('cx', (d, i) => {
-                                //console.log('data', d);
-                                return parseInt(d[0]);
-                            })
-                            .attr('cy', (d, i) => parseInt(d[1]))
+
+                        let main_g = d3.select('#main-svg').select('g');
+                        // console.log(main_g)
+                        // console.log(main_g.append('circle'));
+                        console.log(geopath.pointRadius(1.3 * geoScale / 40000));
+                        main_g.append('circle')
+                            .attr('cx',lat)
+                            .attr('cy', lon)
                             .attr('transform', `translate(0, -${offset})`)
-                            .attr('r', (d,i) => geopath.pointRadius(1.3 * geoScale / 40000))
+                            .attr('r', 5);
 
 
                         main_g.append('path')
                             .datum(startPoint)
                             .attr('id', 'select-point')
-                            .attr('fill', '#ffffff')
-                            .attr('stroke', '#333333')
-                            .attr('stroke-width', 0.2)
+                            .attr('f', '#ff0000')
+                            .attr('radius',100)
                             .attr("pointer-events", 'none')
                             .attr('transform', `translate(0, -${offset})`)
                             .attr('d', geopath.pointRadius(1.3 * geoScale / 40000));
-            //                 .on('mouseover', (e, d) => {
-            //                     d3.select(`#${d.properties.name}`)
-            //                         .transition()
-            //                         .duration(100)
-            //                         .attr('d', geopath.pointRadius(2 * geoScale / 40000));
-            //                     d3.select(`#${d.properties.name}-fake`)
-            //                         .attr('d', geopath.pointRadius(Math.max(2, 4 / Math.sqrt(currentScale)) * geoScale / 40000));
-            //                     let content =
-            //                         `<span class="tooltip-title">${d.properties.name}</span><br />
-            // <span class="tooltip-line">${d.properties.line}</span><br />`;
-            //                     // id: ${d.id}`;
-            //                     d3.select('#main-tooltip')
-            //                         .html(content)
-            //                         .style('top', `${e.clientY + 3}px`)
-            //                         .style('left', `${e.clientX + 3}px`)
-            //                         .style('visibility', 'visible');
-            //                 })
-            //                 .on('mouseout', (e, d) => {
-            //                     d3.select(`#${d.properties.name}`)
-            //                         .transition()
-            //                         .duration(100)
-            //                         .attr('d', geopath.pointRadius(1.3 * geoScale / 40000));
-            //                     if (!detailMode) {
-            //                         d3.select(`#${d.properties.name}-fake`)
-            //                             .attr('d', geopath.pointRadius(Math.max(1.3, 4 / Math.sqrt(currentScale)) * geoScale / 40000));
-            //                     }
-            //                     else {
-            //                         d3.select(`#${d.properties.name}-fake`)
-            //                             .attr('d', geopath.pointRadius(1.3 * geoScale / 40000));
-            //                     }
-            //                     d3.select('#main-tooltip')
-            //                         .style('visibility', 'hidden');
-            //                 })
+                            let c = geoprojection([lat,lon]);
+                            console.log(c);
+                            let content =
+                                                `<span class="tooltip-title">${subwayLines_2[j]['name']}</span>`;
+                                            // id: ${d.id}`;
+                            d3.select('#main-tooltip')
+                                                .html(content)
+                                                .style('top', `${c[1]-offset}px`)
+                                                .style('left', `${c[0]}px`)
+                                                .style('visibility', 'visible');
+
 
                     });
                     dest2.on('mouseout', e => {
                         dest2.attr('font-size', 12);
+                        d3.select('.tooltip-title').remove();
+                        d3.select('#select-point').remove();
                     });
                 }
             }
