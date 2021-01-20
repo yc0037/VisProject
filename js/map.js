@@ -714,7 +714,7 @@ function generateKeyHeatMap(history, station, center, delta = [0.003 * 2, 0.0023
                 if (dis <= maxDis) {
                   let point = utils.getPointJson();
                   point.geometry.coordinates = [dx, dy];
-                  point.colorIndex = dis / maxDis;
+                  point.colorIndex = dis * dis / maxDis / maxDis;
                   point.getOn = getOnStation;
                   point.getOff = getOffStation;
                   points.push(point);
@@ -736,7 +736,8 @@ function keyHeatMap(){
   let allPoints=[];
   //分成四块区域
   let offset = {1999:[0,50], 2006:[(windowWidth-mainWidth)/2,50], 2013:[0,300], 2020:[(windowWidth-mainWidth)/2,300]};
-  let pointColorInterpolate = d3.interpolate(a, b);
+  let smallColorInterpolate0 = d3.interpolateRgb(d3.color('#C0E218'), d3.color('#C70039'));
+  let smallColorInterpolate = d3.interpolateRgb(d3.color('#C70039'), d3.color('#51C2D5'));
 
   for(let keyTime in keyInfo) {
     console.log('pointsnum++',keyTime,keyInfo[keyTime].keyPoints.length);
@@ -763,9 +764,9 @@ function keyHeatMap(){
         .attr('class', keyTime+'circle')
         .attr('cx',(d,i)=>x(d.geometry.coordinates[0]))
         .attr('cy',(d,i)=>(250-y(d.geometry.coordinates[1])))
-        .attr('r',15000/allPoints.length)
+        .attr('r',20000/allPoints.length)
         .attr('transform', `translate(${offset[keyTime][0]}, ${offset[keyTime][1]})`)
-        .attr('fill', 'black');
+        .attr('fill', d => (d.colorIndex < 0.2) ? smallColorInterpolate0(Math.sqrt(d.colorIndex)) : smallColorInterpolate(Math.sqrt(d.colorIndex)));
     keyTimeSvg.append('text')
         .text(keyTime)
         .attr('font-size','1rem')
