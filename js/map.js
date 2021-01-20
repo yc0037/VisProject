@@ -46,15 +46,9 @@ let _maxDis = 1;
 
 export function setMaxDis(val) {
   _maxDis = val;
-  setNormalMode();
-}
-
-function _setNormalMode() {
   normalMode();
   isHeatmap=false;
 }
-
-export const setNormalMode = _.debounce(_setNormalMode, 1000);
 
 //更改年月或日期调用函数
 export const updateMap = _.debounce(_updateMap,50)
@@ -794,7 +788,7 @@ function keyHeatMap(){
   const yRange = get_point_min_max(allPoints, 1);
   const [centerX, centerY] = [(xRange[1] + xRange[0]) / 2, (yRange[1] + yRange[0]) / 2];
   const halfR = Math.max((xRange[1] - xRange[0]) / 2, (yRange[1] - yRange[0]) / 2, 0.15);
-  const radius = Math.min(20000 / allPoints.length, 2.5);
+  const radius = Math.min(36000 / allPoints.length, 4);
 
   let x = d3.scaleLinear()
       .domain([centerX - halfR, centerX + halfR])
@@ -807,14 +801,15 @@ function keyHeatMap(){
   for(let keyTime in keyInfo){
     let points = keyInfo[keyTime].keyPoints;
     let keyTimeSvg = pointG.select(`#key-points-${keyTime}`);
-    keyTimeSvg.selectAll('circle').remove();
-    keyTimeSvg.selectAll('circle')
+    keyTimeSvg.selectAll('rect').remove();
+    keyTimeSvg.selectAll('rect')
         .data(points)
         .enter()
-        .append('circle')
-        .attr('cx',(d,i)=>x(d.geometry.coordinates[0]))
-        .attr('cy',(d,i)=>(250-y(d.geometry.coordinates[1])))
-        .attr('r', radius)
+        .append('rect')
+        .attr('x',(d,i)=>x(d.geometry.coordinates[0]))
+        .attr('y',(d,i)=>(250-y(d.geometry.coordinates[1])))
+        .attr('width', radius)
+        .attr('height', radius)
         .attr('transform', `translate(${offset[keyTime][0]}, ${offset[keyTime][1]})`)
         .attr('fill', d => (d.colorIndex < 0.2) ? smallColorInterpolate0(Math.sqrt(d.colorIndex)) : smallColorInterpolate(Math.sqrt(d.colorIndex)));
     //.style('visibility', 'hidden');
