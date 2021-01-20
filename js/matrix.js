@@ -194,7 +194,7 @@ export async function drawDest(cellWidth){
           setTimeout(() => {
             let lat = subwayLines_2[j]['x'];
             let lon = subwayLines_2[j]['y'];
-            generateHeatMap('notStation', CoordinateToClient[lat, lon]);
+            generateHeatMap('notStation', [lat, lon]);
             setTimeout(() => {
               hideLoadingMask();
               setTimeout(() => showHeatPoint(), maskTime + 4);
