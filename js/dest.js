@@ -91,7 +91,7 @@ export async function drawDest(cellWidth){
     for(let i = 0; i < dest_class.length; i++){
         const dest1 = g2.append('text')
             .attr('id',dest_class[i])
-            .attr('x', iWidth * (i + 1))
+            .attr('x', iWidth * (i+1) )
             .attr('y', 20)
             .attr('font-size', 12)
             .text(dest_class[i])
@@ -245,6 +245,7 @@ export async function drawDest(cellWidth){
                     dest2.on('mouseout', e => {
                         dest2.attr('font-size', 12);
                         d3.select('.tooltip-title').remove();
+                        d3.select('#main-tooltip').style('visibility','hidden');
                         d3.select('#select-point').remove();
                     });
                 }
