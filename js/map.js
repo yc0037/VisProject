@@ -36,11 +36,14 @@ let adjStation;
 let legends;
 let date=2020.83;//当前年月
 let time;     //当前时间
+<<<<<<< HEAD
 export var isHeatmap;//判断是否现在显示有热力图
+=======
+>>>>>>> af5c2832122402eab7d06ef739d723f40ea8130f
 const maskTime = 200;
 let subwayLines;
 let allLinks; //保存初始的所有线路
-const keyTime=[1999, 2006, 2013, 2020];//关键帧时间
+export const keyTime=[1999, 2006, 2013, 2020];//关键帧时间
 let keyInfo={};
 export let _maxDis = 1;
 export let globalCenter;
@@ -48,7 +51,6 @@ export let globalCenter;
 export function setMaxDis(val) {
   _maxDis = val;
   normalMode();
-  isHeatmap=false;
 }
 
 //更改年月或日期调用函数
@@ -56,16 +58,18 @@ export const updateMap = _.debounce(_updateMap,50)
 
 async function _updateMap(_date,_time){
   //更新时去掉已画热力图
-  if(isHeatmap===true)
+  if(detailMode)
   {
     normalMode();
+<<<<<<< HEAD
     isHeatmap=false;
     d3.select('#main-tooltip').style('visibility','hidden');
     d3.selectAll('#select-point').remove();
     d3.selectAll('.second_class_dest').attr('font-size', 12);
+=======
+>>>>>>> af5c2832122402eab7d06ef739d723f40ea8130f
   }
   //normalMode();
-  pointG.selectAll('circle').remove();
   date=_date;
   time=_time;
   //根据当前年月和时间维护numStations,links,stations,stationMap
@@ -77,6 +81,9 @@ async function _updateMap(_date,_time){
       keyInfo[keyTime[i]].keyLinks] = await lineStationPrepare(subwayLines,keyTime[i],_time);
   }
   await drawSubway(date,time);
+  //更新legend
+  d3.select('#map-legend-container').remove();
+  drawLegend();
 }
 
 export async function initMain(_date,_time) {
@@ -92,7 +99,7 @@ export async function initMain(_date,_time) {
       .then(response => response.json());
   //根据当前年月和时间生成numStations,links,stations,stationMap
   [ stations, numStations, stationMap, links] = await lineStationPrepare(subwayLines,date,time);
-  console.log("地铁站",stations)
+  // console.log("地铁站",stations)
   //生成关键帧的数据结构
   for(let i=0;i<keyTime.length;i++){
     keyInfo[keyTime[i]]=await getKeyInfo(keyTime[i]);
@@ -103,8 +110,8 @@ export async function initMain(_date,_time) {
       keyInfo[keyTime[i]].keyLinks] = await lineStationPrepare(subwayLines,keyTime[i],12.06);
   }
   //console.log('key',keyInfo);
-  console.log('timeata',timeData);
-  console.log('date',date);
+  // console.log('timeata',timeData);
+  // console.log('date',date);
 
   geoFeature = await fetch(beijingMap)
       .then(response => response.json());
@@ -133,10 +140,13 @@ export async function initMain(_date,_time) {
       .on("click", (e, d) => {
         if (detailMode) {
           normalMode();
+<<<<<<< HEAD
           isHeatmap=false;
           d3.select('#main-tooltip').style('visibility','hidden');
           d3.selectAll('#select-point').remove();
           d3.selectAll('.second_class_dest').attr('font-size', 12);
+=======
+>>>>>>> af5c2832122402eab7d06ef739d723f40ea8130f
         }
         else {
           showLoadingMask();
@@ -210,7 +220,7 @@ function createLoadingMask() {
 }
 
 export function hideLoadingMask() {
-  console.log('hide');
+  // console.log('hide');
   loadingMask.transition().duration(maskTime)
     .style('opacity', 0);
   setTimeout(() => {
@@ -219,7 +229,7 @@ export function hideLoadingMask() {
 }
 
 export function showLoadingMask() {
-  console.log('show');
+  // console.log('show');
   loadingMask.style('display', 'flex');
   loadingMask.transition().duration(maskTime)
     .style('opacity', 1);
@@ -228,7 +238,7 @@ export function showLoadingMask() {
 const appearTimeInterpolate = d3.interpolate(10, 200);
 
 export function showHeatPoint() {
-  if (g.selectAll('.heat-point')._groups[0].length < 2000) {;
+  if (g.selectAll('.heat-point')._groups[0].length < 2000) {
     g.selectAll('.heat-point').each((d, i, nodes) => {
       setTimeout(() => {
         d3.select(nodes[i])
@@ -289,14 +299,14 @@ async function lineStationPrepare(subwayLines,date,time){
         }
       }
       else if(time<start || time>end){
-        console.log(station.name,"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1")
+        // console.log(station.name,"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1")
       }
     }
     return tempStations;
   });
   _stations = _.flattenDeep(_stations);
   let _numStations = _stations.length;
-  console.log('station',_stations);
+  // console.log('station',_stations);
   //换乘站点地铁线路合并
   for (let i = 0; i < _numStations; i++){
     for (let j = i+1; j < _numStations; j++){
@@ -364,7 +374,7 @@ async function lineStationPrepare(subwayLines,date,time){
     }
     _links.push(line);
   }
-  console.log('link',_links);
+  // console.log('link',_links);
 
   //最全线路记录
   if(date>=2020.8)
@@ -472,15 +482,25 @@ async function drawSubway(date,time) {
         }, maskTime);
       });
     hideLoadingMask();
-    console.log('和平门到宣武门: ', directDistance(116.384209, 39.900098, 116.374314, 39.899765, 'Euclidean')); // 837m
-    console.log('西单到宣武门: ', directDistance(116.374072, 39.907383, 116.374314, 39.899765, 'Euclidean')); // 828m
+    // console.log('和平门到宣武门: ', directDistance(116.384209, 39.900098, 116.374314, 39.899765, 'Euclidean')); // 837m
+    // console.log('西单到宣武门: ', directDistance(116.374072, 39.907383, 116.374314, 39.899765, 'Euclidean')); // 828m
 }
 
 function drawLegend() {
   legends = d3.select('#main')
     .append('div').attr('id', 'map-legend-container');
+  //legends.remove();
   const colors = utils.colors;
   for (const key in colors) {
+    let flag=0;
+    for(let i=0;i<links.length;i++){
+      if(links[i].properties.name===key){
+        flag=1;
+        break;
+      }
+    }
+    if(!flag)
+      continue;
     const legend = legends.append('div')
             .attr('id', `legend-${key}`)
             .classed(`map-legend flex center`, true);
@@ -582,7 +602,7 @@ async function calcDistForStations(links,stations,stationMap,numStations) {
         t3 = stationMap.get('T3航站楼'),
         dzm = stationMap.get('东直门'),
         syq = stationMap.get('三元桥');
-    console.log('t2',t2);
+    // console.log('t2',t2);
     if(typeof(t2)!='undefined'&&typeof(t3)!='undefined'&&typeof(dzm)!='undefined'&&typeof(syq)!='undefined') {
       dis[dzm][syq] = dis[syq][dzm] = 1 / 15;
       label[dzm][syq] = label[syq][dzm] = 20;
@@ -655,9 +675,9 @@ function findPath(start, end) {
 
 //@history 标记历史时间点
 //@station 当前选中站点信息
-function generateKeyHeatMap(history, station, center, maxDis = 1.5, delta = [0.003 * 2, 0.002335 * 2]){
+export function generateKeyHeatMap(history, station, center, maxDis = 1.5, delta = [0.003 * 2, 0.002335 * 2]){
   maxDis = maxDis || 1.5;
-  console.log('test',keyInfo[history]);
+  // console.log('test',keyInfo[history]);
   let [X, Y] = center;
   let [deltaX, deltaY] = delta;
   let stations = keyInfo[history].keyStations;
@@ -670,7 +690,7 @@ function generateKeyHeatMap(history, station, center, maxDis = 1.5, delta = [0.0
   let openFlag=0;
   if(station!='notStation'){
     for (let j in station.properties.open){
-      console.log('current!!',station.properties.open[j],j);
+      // console.log('current!!',station.properties.open[j],j);
       if(station.properties.open[j]<history)
         openFlag=1;
     }
@@ -679,7 +699,7 @@ function generateKeyHeatMap(history, station, center, maxDis = 1.5, delta = [0.0
     else
       station.id=stationMap.get(station.properties.name);
   }
-  console.log('sign!!!!',stations);
+  // console.log('sign!!!!',stations);
   //station.id=stationMap.get(station.properties.name);
   let idList = new Array();
   let getOnDis = new Array();
@@ -708,13 +728,13 @@ function generateKeyHeatMap(history, station, center, maxDis = 1.5, delta = [0.0
     for (let i = 0; i < stationNum; i++)
       if (nearFlag[i] != -1) {
         idList.push(i);
-        console.log(stations[i]);
+        // console.log(stations[i]);
         let [ix, iy] = stations[i].geometry.coordinates;
         getOnDis.push(directDistance(X, Y, ix, iy, 'Euclidean') / 5);
       }
   }
   else {
-    console.log('210wrong',history,station,stations);
+    // console.log('210wrong',history,station,stations);
     idList.push(station.id);
     getOnDis.push(0);
   }
@@ -755,7 +775,7 @@ function generateKeyHeatMap(history, station, center, maxDis = 1.5, delta = [0.0
     t = (t + 1) * 2;
   }
   keyInfo[history].keyPoints=points;
-  console.log('pointsnum',history,points.length);
+  // console.log('pointsnum',history,points.length);
 }
 
 function initKeyHeatMap() {
@@ -773,7 +793,7 @@ function initKeyHeatMap() {
 }
 
 //将关键时间点的热力图画出
-function keyHeatMap(){
+export function keyHeatMap(){
   let a = d3.rgb(0, 0, 0);
   let b = d3.rgb(255, 255, 255);
   let c = d3.rgb(47, 84, 235);
@@ -784,7 +804,7 @@ function keyHeatMap(){
   let smallColorInterpolate = d3.interpolateRgb(d3.color('#C70039'), d3.color('#51C2D5'));
 
   for(let keyTime in keyInfo) {
-    console.log('pointsnum++',keyTime,keyInfo[keyTime].keyPoints.length);
+    // console.log('pointsnum++',keyTime,keyInfo[keyTime].keyPoints.length);
     allPoints = allPoints.concat(allPoints,keyInfo[keyTime].keyPoints);
   }
 
@@ -808,7 +828,6 @@ function keyHeatMap(){
   for(let keyTime in keyInfo){
     let points = keyInfo[keyTime].keyPoints;
     let keyTimeSvg = pointG.select(`#key-points-${keyTime}`);
-    keyTimeSvg.selectAll('rect').remove();
     keyTimeSvg.selectAll('rect')
         .data(points)
         .enter()
@@ -838,9 +857,8 @@ function keyHeatMap(){
   }
 }
 export function generateHeatMap(station, center, maxDis = 1.5, delta = [0.003 * 2, 0.002335 * 2]) {
-  console.log('current!!',station);
+  // console.log('current!!',station);
   maxDis = maxDis || 1.5;
-  isHeatmap = true;
   detailMode = true;
   if (currentStation) {
     currentStation
@@ -853,14 +871,14 @@ export function generateHeatMap(station, center, maxDis = 1.5, delta = [0.003 * 
   if(station!='notStation'){
     let minDate=3000;
     for (let j in station.properties.open){
-      console.log('current!!',station.properties.open[j],j);
+      // console.log('current!!',station.properties.open[j],j);
       if(station.properties.open[j]<minDate)
         minDate=station.properties.open[j];
     }
     if (minDate>date)
       station='notStation';
-    console.log(station,'now!')
-    console.log('current!!',date,minDate);
+    // console.log(station,'now!')
+    // console.log('current!!',date,minDate);
   }
 
 
@@ -876,7 +894,7 @@ export function generateHeatMap(station, center, maxDis = 1.5, delta = [0.003 * 
       .attr('fill', '#ffffff')
       .attr('stroke', '#000000')
       .attr('transform', `translate(0, -${offset})`)
-      .attr('d', geopath.pointRadius(1.3 * geoScale / 40000));
+      .attr('d', geopath.pointRadius(2.6 * geoScale / 40000));
   }
   else {
     currentStation = d3.select(`#${station.properties.name}`);
@@ -1062,6 +1080,7 @@ export function generateHeatMap(station, center, maxDis = 1.5, delta = [0.003 * 
           .raise();
       }
     })
+<<<<<<< HEAD
     .on('click', function(e,d){
       normalMode();
       isHeatmap=false;
@@ -1069,6 +1088,9 @@ export function generateHeatMap(station, center, maxDis = 1.5, delta = [0.003 * 
       d3.selectAll('#select-point').remove();
       d3.selectAll('.second_class_dest').attr('font-size', 12);
     });
+=======
+    .on('click', normalMode);
+>>>>>>> af5c2832122402eab7d06ef739d723f40ea8130f
 
 
   g.selectAll('.heat-line')
@@ -1095,7 +1117,7 @@ export function normalMode() {
       .attr('stroke-width', 0.2);
     currentStation = null;
   }
-  pointG.selectAll('circle').remove();
+  pointG.selectAll('rect').remove();
   d3.select('#start-point').remove();
   g.select('#getOn-line').remove();
   g.select('#getOff-line').remove();
@@ -1139,8 +1161,8 @@ function actualMinDistance(idList, getOnDis, lat2, lon2,stations,numStations,dis
       // 先走到地铁站idList[j]，乘地铁到地铁站i，然后走到终点
       //console.log('wrong',idList)
       //console.log('wrong',idList[j],i)
-      if(typeof (disStations[idList[j]])==='undefined')
-        console.log('wrong',idList, numStations, disStations, stations);
+      // if(typeof (disStations[idList[j]])==='undefined')
+        // console.log('wrong',idList, numStations, disStations, stations);
       let tmp = getOnDis[j] + disStations[idList[j]][i] + getOffDis;
       if (tmp < minDis) {
         minDis = tmp;
