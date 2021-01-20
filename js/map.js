@@ -42,7 +42,7 @@ let subwayLines;
 let allLinks; //保存初始的所有线路
 const keyTime=[1999, 2006, 2013, 2020];//关键帧时间
 let keyInfo={};
-let _maxDis = 1.5;
+export let _maxDis = 1.5;
 
 export function setMaxDis(val) {
   _maxDis = val;
