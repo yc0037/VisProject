@@ -174,7 +174,21 @@ export async function initMain(_date,_time) {
 
   await drawSubway(date,time);
 
-
+  const zoom = d3.zoom().on('zoom', e => {
+    currentScale = e.transform.k;
+    currentTranslate = e.transform;
+    g.transition().ease(d3.easeExpOut).duration(1000).attr('transform', e.transform);
+    g.selectAll('.border-path')
+        .attr('stroke-width', 0.2 / Math.sqrt(e.transform.k));
+    if (!detailMode) {
+      g.selectAll('.fake-point')
+          .attr('d', geopath.pointRadius(Math.max(1.3, 4 / Math.sqrt(currentScale)) * geoScale / 40000));
+    }
+    else {
+      g.selectAll('.fake-point')
+          .attr('d', geopath.pointRadius(1.3 * geoScale / 40000));
+    }
+  });
 
   mainSvg.call(zoom);
 
