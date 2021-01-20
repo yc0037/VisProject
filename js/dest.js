@@ -1,6 +1,6 @@
 import * as utils from './utils.js';
 import { getDest } from "./data.js";
-import {generateHeatMap, hideLoadingMask, showHeatPoint, showLoadingMask} from "./map.js";
+import {generateHeatMap, hideLoadingMask, showHeatPoint, showLoadingMask,currentScale,currentTranslate} from "./map.js";
 const { mainHeight, mainWidth,sideWidth } = utils;
 const beijingMap = './data/110000_full.json';
 const maskTime = 200;
@@ -9,8 +9,7 @@ const maskTime = 200;
 d3.select('#side').select('svg').remove();
 
 let sideSvg = d3.select('#side-up')
-
-
+let titleMargin = 0.1 * document.body.clientHeight;
 let dest = sideSvg.append('div').attr('id', 'dest-container');
 
 
@@ -98,7 +97,7 @@ export async function drawDest(cellWidth){
             .text(dest_class[i])
             .attr('color', '#A0C53E');
         dest1.on('mouseover', e => {
-            dest1.attr('font-size', 13);
+            dest1.attr('font-size', 14);
             let main_g = d3.select('#main-svg').select('g');
             let subwayLines_2 = subwayLines[dest_class[i]];
             let this_g = main_g.append('div')
@@ -237,8 +236,8 @@ export async function drawDest(cellWidth){
                                             // id: ${d.id}`;
                             d3.select('#main-tooltip')
                                                 .html(content)
-                                                .style('top', `${c[1]-offset}px`)
-                                                .style('left', `${c[0]}px`)
+                                                .style('top', `${(c[1]-offset)*currentScale+titleMargin + currentTranslate.y}px`)
+                                                .style('left', `${c[0] * currentScale + currentTranslate.x}px`)
                                                 .style('visibility', 'visible');
 
 
