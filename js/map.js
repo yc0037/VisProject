@@ -39,7 +39,7 @@ let time;     //当前时间
 const maskTime = 200;
 let subwayLines;
 let allLinks; //保存初始的所有线路
-const keyTime=[1999, 2006, 2013, 2020];//关键帧时间
+export const keyTime=[1999, 2006, 2013, 2020];//关键帧时间
 let keyInfo={};
 export let _maxDis = 1;
 
@@ -643,7 +643,7 @@ function findPath(start, end) {
 
 //@history 标记历史时间点
 //@station 当前选中站点信息
-function generateKeyHeatMap(history, station, center, maxDis = 1.5, delta = [0.003 * 2, 0.002335 * 2]){
+export function generateKeyHeatMap(history, station, center, maxDis = 1.5, delta = [0.003 * 2, 0.002335 * 2]){
   maxDis = maxDis || 1.5;
   // console.log('test',keyInfo[history]);
   let [X, Y] = center;
@@ -761,7 +761,7 @@ function initKeyHeatMap() {
 }
 
 //将关键时间点的热力图画出
-function keyHeatMap(){
+export function keyHeatMap(){
   let a = d3.rgb(0, 0, 0);
   let b = d3.rgb(255, 255, 255);
   let c = d3.rgb(47, 84, 235);
@@ -1071,11 +1071,7 @@ export function normalMode() {
       .attr('stroke-width', 0.2);
     currentStation = null;
   }
-  pointG.selectAll('circle').remove();
-  for(let keyTime in keyInfo){
-    let keyTimeSvg = pointG.select(`#key-points-${keyTime}`);
-    keyTimeSvg.selectAll('rect').remove();
-  }
+  pointG.selectAll('rect').remove();
   d3.select('#start-point').remove();
   g.select('#getOn-line').remove();
   g.select('#getOff-line').remove();
@@ -1119,7 +1115,7 @@ function actualMinDistance(idList, getOnDis, lat2, lon2,stations,numStations,dis
       // 先走到地铁站idList[j]，乘地铁到地铁站i，然后走到终点
       //console.log('wrong',idList)
       //console.log('wrong',idList[j],i)
-      if(typeof (disStations[idList[j]])==='undefined')
+      // if(typeof (disStations[idList[j]])==='undefined')
         // console.log('wrong',idList, numStations, disStations, stations);
       let tmp = getOnDis[j] + disStations[idList[j]][i] + getOffDis;
       if (tmp < minDis) {
