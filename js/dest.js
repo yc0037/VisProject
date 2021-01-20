@@ -1,6 +1,10 @@
 import * as utils from './utils.js';
 import { getDest } from "./data.js";
+<<<<<<< HEAD
+import {generateHeatMap, hideLoadingMask, showHeatPoint, showLoadingMask,currentScale,currentTranslate,_maxDis,normalMode,isHeatmap,globalCenter} from "./map.js";
+=======
 import {generateHeatMap, hideLoadingMask, showHeatPoint, showLoadingMask, normalMode, currentScale, keyTime, currentTranslate, generateKeyHeatMap, keyHeatMap, _maxDis} from "./map.js";
+>>>>>>> af5c2832122402eab7d06ef739d723f40ea8130f
 const { mainHeight, mainWidth,sideWidth } = utils;
 const beijingMap = './data/110000_full.json';
 const maskTime = 200;
@@ -11,6 +15,11 @@ d3.select('#side').select('svg').remove();
 let sideSvg = d3.select('#side-up')
 let titleMargin = 0.1 * document.body.clientHeight;
 let dest = sideSvg.append('div').attr('id', 'dest-container');
+<<<<<<< HEAD
+let clickNum = 0;
+
+=======
+>>>>>>> af5c2832122402eab7d06ef739d723f40ea8130f
 
 sideSvg =  dest.append('svg')
     .style('width', '100%')
@@ -182,7 +191,57 @@ export async function drawDest(cellWidth){
                     //图上标记点
                     let lat = subwayLines_2[j]['x'];
                     let lon = subwayLines_2[j]['y'];
+
                     dest2.on('click', e =>{
+<<<<<<< HEAD
+
+                        if(isHeatmap){
+                            clickNum = 1 - clickNum;
+                            //第一次点击的时候点出点，第二次点消
+                            if(clickNum == 0){
+                                dest2.attr('font-size', 12);
+                                d3.select('.tooltip-title').remove();
+                                d3.select('#main-tooltip').style('visibility','hidden');
+                                d3.selectAll('#select-point').remove();
+                            }else{
+                                dest2.attr('font-size', 14);
+                                let startPoint = utils.getPointJson();
+                                startPoint.geometry.coordinates = [lat, lon];
+
+                                let main_g = d3.select('#main-svg').select('g');
+                                // console.log(main_g)
+                                // console.log(main_g.append('circle'));
+                                console.log(geopath.pointRadius(1.3 * geoScale / 40000));
+                                main_g.append('circle')
+                                    .attr('cx',lat)
+                                    .attr('cy', lon)
+                                    .attr('transform', `translate(0, -${offset})`)
+                                    .attr('r', 5);
+
+
+                                main_g.append('path')
+                                    .datum(startPoint)
+                                    .attr('id', 'select-point')
+                                    .attr('f', '#ff0000')
+                                    .attr('radius',100)
+                                    .attr("pointer-events", 'none')
+                                    .attr('transform', `translate(0, -${offset})`)
+                                    .attr('d', geopath.pointRadius(1.3 * geoScale / 40000));
+                                let c = geoprojection([lat,lon]);
+                                console.log(c);
+                                let content =
+                                    `<span class="tooltip-title">${subwayLines_2[j]['name']}</span>`;
+                                // id: ${d.id}`;
+                                d3.select('#main-tooltip')
+                                    .html(content)
+                                    .style('top', `${(c[1]-offset)*currentScale+titleMargin + currentTranslate.y + 3}px`)
+                                    .style('left', `${c[0] * currentScale + currentTranslate.x + 3}px`)
+                                    .style('visibility', 'visible');
+                            }
+                        }else{
+                            normalMode();
+                            showLoadingMask();
+=======
                         normalMode();
                         showLoadingMask();
                         setTimeout(() => {
@@ -190,13 +249,19 @@ export async function drawDest(cellWidth){
                             for(let i=0;i<keyTime.length;i++)
                                 generateKeyHeatMap(keyTime[i],'notStation', [lat, lon], _maxDis);
                             keyHeatMap();
+>>>>>>> af5c2832122402eab7d06ef739d723f40ea8130f
                             setTimeout(() => {
-                                hideLoadingMask();
-                                setTimeout(() => showHeatPoint(), maskTime + 4);
+                                generateHeatMap('notStation', [lat, lon], _maxDis);
+                                setTimeout(() => {
+                                    hideLoadingMask();
+                                    setTimeout(() => showHeatPoint(), maskTime + 4);
+                                }, maskTime);
                             }, maskTime);
-                        }, maskTime);
+                        }
+
                     });
-                    dest2.on('mouseover', e => {
+                    dest2.on('mouseover', (e,d) => {
+
                         dest2.attr('font-size', 14);
                         let startPoint = utils.getPointJson();
                         startPoint.geometry.coordinates = [lat, lon];
@@ -219,6 +284,20 @@ export async function drawDest(cellWidth){
                             .attr('radius',100)
                             .attr("pointer-events", 'none')
                             .attr('transform', `translate(0, -${offset})`)
+<<<<<<< HEAD
+                            .attr('d', geopath.pointRadius(1.3 * geoScale / 40000));
+                        let c = geoprojection([lat,lon]);
+                        console.log(c);
+                        let content =
+                            `<span class="tooltip-title">${subwayLines_2[j]['name']}</span>`;
+                        // id: ${d.id}`;
+                        d3.select('#main-tooltip')
+                            .html(content)
+                            .style('top', `${(c[1]-offset)*currentScale+titleMargin + currentTranslate.y + 3}px`)
+                            .style('left', `${c[0] * currentScale + currentTranslate.x + 3}px`)
+                            .style('visibility', 'visible');
+
+=======
                             .attr('d', geopath.pointRadius(2.6 * geoScale / 40000));
                             let c = geoprojection([lat,lon]);
                             // console.log(c);
@@ -230,12 +309,15 @@ export async function drawDest(cellWidth){
                                                 .style('top', `${(c[1]-offset)*currentScale+titleMargin + currentTranslate.y + 3}px`)
                                                 .style('left', `${c[0] * currentScale + currentTranslate.x + 3}px`)
                                                 .style('visibility', 'visible');
+>>>>>>> af5c2832122402eab7d06ef739d723f40ea8130f
                     });
                     dest2.on('mouseout', e => {
-                        dest2.attr('font-size', 12);
-                        d3.select('.tooltip-title').remove();
-                        d3.select('#main-tooltip').style('visibility','hidden');
-                        d3.select('#select-point').remove();
+                        if(clickNum == 0 || !isHeatmap){
+                            dest2.attr('font-size', 12);
+                            d3.select('.tooltip-title').remove();
+                            d3.select('#main-tooltip').style('visibility','hidden');
+                            d3.selectAll('#select-point').remove();
+                        }
                     });
                 }
             }
