@@ -194,7 +194,7 @@ export async function drawDest(cellWidth){
           setTimeout(() => {
             let lat = subwayLines_2[j]['x'];
             let lon = subwayLines_2[j]['y'];
-            generateHeatMap('notStation', [lat, lon]);
+            generateHeatMap('notStation', CoordinateToClient[lat, lon]);
             setTimeout(() => {
               hideLoadingMask();
               setTimeout(() => showHeatPoint(), maskTime + 4);
@@ -206,4 +206,9 @@ export async function drawDest(cellWidth){
   }
 
 
+}
+
+function CoordinateToClient(lat, lon) {
+  let titleMargin = 0.1 * document.body.clientHeight;
+  return [geoprojection([lat, lon])[0] * currentScale + currentTranslate.x, geoprojection([lat, lon])[1] * currentScale + currentTranslate.y];
 }
