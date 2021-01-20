@@ -33,6 +33,7 @@ body {
   flex: 1 0 0;
   top:20%;
   min-width: 450px;
+  padding: 0 20px;
 }
 
 #side-up{
