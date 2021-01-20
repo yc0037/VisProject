@@ -12,8 +12,6 @@ let sideSvg = d3.select('#side-up')
 let titleMargin = 0.1 * document.body.clientHeight;
 let dest = sideSvg.append('div').attr('id', 'dest-container');
 
-
-
 sideSvg =  dest.append('svg')
     .style('width', '100%')
     .style('height', '100%');
@@ -56,20 +54,6 @@ export function initDest() {
     drawDest(cellWidth);
 }
 
-function _updateSide() {
-    for (let i = 0; i < 50; ++i) {
-        for (let j = 0; j < 50; ++j) {
-            distMatrix[i][j] = (Math.random() * 10).toFixed(2);
-            g.select(`#cell-${i}-${j}`)
-                .attr('fill', colorScale(distMatrix[i][j]));
-        }
-    }
-}
-
-export const updateSide = _.debounce(_updateSide, 50);
-
-
-
 export async function drawDest(cellWidth){
     let geoFeature = await fetch(beijingMap)
         .then(response => response.json());
@@ -102,7 +86,7 @@ export async function drawDest(cellWidth){
             let subwayLines_2 = subwayLines[dest_class[i]];
             let this_g = main_g.append('div')
                 .attr('id','select-point-1');
-            console.log(subwayLines_2.length);
+            // console.log(subwayLines_2.length);
             for(let j = 0; j < subwayLines_2.length;j++){
                 let lat1 = subwayLines_2[j]['x'];
                 let lon1 = subwayLines_2[j]['y'];
@@ -144,21 +128,21 @@ export async function drawDest(cellWidth){
                     //document.getElementById(`${dest_class[j]}`).attr('font-size', 12)
                     document.getElementById(`${dest_class[j]}`).style.visibility = 'hidden';
                 }
-                console.log(`#${dest_class[i]}`);
+                // console.log(`#${dest_class[i]}`);
                 document.getElementById(`${dest_class[i]}`).style.color = "#ff0000";
-                console.log(document.getElementById(`${dest_class[i]}`).style);
-                console.log(document.getElementById(`${dest_class[i]}`));
+                // console.log(document.getElementById(`${dest_class[i]}`).style);
+                // console.log(document.getElementById(`${dest_class[i]}`));
                 d3.select(`${dest_class[i]}`)
                     .style('background-color', '#dddddddd');
                 //先删掉之前的二级类目
                 var thisNode=document.getElementById("second_class_dest");
-                console.log(thisNode);
+                // console.log(thisNode);
                 if(thisNode != null){
                     thisNode.remove();
                 }
                 // 显示二级类目
                 let subwayLines_2 = subwayLines[dest_class[i]];
-                console.log(subwayLines_2);
+                // console.log(subwayLines_2);
                 //得计算一下长度
                 let total_length = 0;
                 let total_char = 36;
@@ -167,10 +151,10 @@ export async function drawDest(cellWidth){
                     total_length += subwayLines_2[j]['name'].length;
                 }
                 let gap = (total_char - total_length) / (subwayLines_2.length + 1);
-                console.log(gap);
+                // console.log(gap);
 
                 let jWidth = destWidth / total_char;
-                console.log(jWidth);
+                // console.log(jWidth);
                 g3 = g2.append('g').attr('id', 'second_class_dest');
                 //测试代码
                 // g3.append('text')
@@ -183,7 +167,7 @@ export async function drawDest(cellWidth){
 
                 let accumulate_width = 0;
                 for(let j = 0; j < subwayLines_2.length; j++){
-                    console.log(jWidth * (accumulate_width + 1));
+                    // console.log(jWidth * (accumulate_width + 1));
                     let dest2 = g3.append('text')
                         .attr('class','second_class_dest')
                         .attr('id',subwayLines_2[j]['name'])
@@ -220,25 +204,24 @@ export async function drawDest(cellWidth){
                         let main_g = d3.select('#main-svg').select('g');
                         // console.log(main_g)
                         // console.log(main_g.append('circle'));
-                        console.log(geopath.pointRadius(1.3 * geoScale / 40000));
-                        main_g.append('circle')
-                            .attr('cx',lat)
-                            .attr('cy', lon)
-                            .attr('transform', `translate(0, -${offset})`)
-                            .attr('fill', 'grey')
-                            .attr('r', 5);
+                        // console.log(geopath.pointRadius(1.3 * geoScale / 40000));
+                        // main_g.append('circle')
+                        //     .attr('cx',lat)
+                        //     .attr('cy', lon)
+                        //     .attr('transform', `translate(0, -${offset})`)
+                        //     .attr('r', 5);
 
 
                         main_g.append('path')
                             .datum(startPoint)
                             .attr('id', 'select-point')
-                            .attr('f', '#ff0000')
+                            .attr('fill', '#ff0000')
                             .attr('radius',100)
                             .attr("pointer-events", 'none')
                             .attr('transform', `translate(0, -${offset})`)
-                            .attr('d', geopath.pointRadius(1.3 * geoScale / 40000));
+                            .attr('d', geopath.pointRadius(2.6 * geoScale / 40000));
                             let c = geoprojection([lat,lon]);
-                            console.log(c);
+                            // console.log(c);
                             let content =
                                                 `<span class="tooltip-title">${subwayLines_2[j]['name']}</span>`;
                                             // id: ${d.id}`;
@@ -247,8 +230,6 @@ export async function drawDest(cellWidth){
                                                 .style('top', `${(c[1]-offset)*currentScale+titleMargin + currentTranslate.y + 3}px`)
                                                 .style('left', `${c[0] * currentScale + currentTranslate.x + 3}px`)
                                                 .style('visibility', 'visible');
-
-
                     });
                     dest2.on('mouseout', e => {
                         dest2.attr('font-size', 12);
