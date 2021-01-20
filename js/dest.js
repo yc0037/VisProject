@@ -1,6 +1,6 @@
 import * as utils from './utils.js';
 import { getDest } from "./data.js";
-import {generateHeatMap, hideLoadingMask, showHeatPoint, showLoadingMask, normalMode, currentScale, currentTranslate, _maxDis} from "./map.js";
+import {generateHeatMap, hideLoadingMask, showHeatPoint, showLoadingMask, normalMode, currentScale, keyTime, currentTranslate, generateKeyHeatMap, keyHeatMap, _maxDis} from "./map.js";
 const { mainHeight, mainWidth,sideWidth } = utils;
 const beijingMap = './data/110000_full.json';
 const maskTime = 200;
@@ -203,6 +203,9 @@ export async function drawDest(cellWidth){
                         showLoadingMask();
                         setTimeout(() => {
                             generateHeatMap('notStation', [lat, lon], _maxDis);
+                            for(let i=0;i<keyTime.length;i++)
+                                generateKeyHeatMap(keyTime[i],'notStation', [lat, lon], _maxDis);
+                            keyHeatMap();
                             setTimeout(() => {
                                 hideLoadingMask();
                                 setTimeout(() => showHeatPoint(), maskTime + 4);
@@ -222,6 +225,7 @@ export async function drawDest(cellWidth){
                             .attr('cx',lat)
                             .attr('cy', lon)
                             .attr('transform', `translate(0, -${offset})`)
+                            .attr('fill', 'grey')
                             .attr('r', 5);
 
 
