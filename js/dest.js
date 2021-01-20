@@ -236,8 +236,8 @@ export async function drawDest(cellWidth){
                                             // id: ${d.id}`;
                             d3.select('#main-tooltip')
                                                 .html(content)
-                                                .style('top', `${(c[1]-offset)*currentScale+titleMargin + currentTranslate.y}px`)
-                                                .style('left', `${c[0] * currentScale + currentTranslate.x}px`)
+                                                .style('top', `${(c[1]-offset)*currentScale+titleMargin + currentTranslate.y + 3}px`)
+                                                .style('left', `${c[0] * currentScale + currentTranslate.x + 3}px`)
                                                 .style('visibility', 'visible');
 
 
