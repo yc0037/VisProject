@@ -224,20 +224,31 @@ export function showLoadingMask() {
     .style('opacity', 1);
 }
 
-// const appearTimeInterpolate = d3.interpolate(10, 200);
+const appearTimeInterpolate = d3.interpolate(10, 200);
 
 export function showHeatPoint() {
-  g.selectAll('.heat-point').each((d, i, nodes) => {
-    // setTimeout(() => {
+  if (g.selectAll('.heat-point')._groups[0].length < 2000) {;
+    g.selectAll('.heat-point').each((d, i, nodes) => {
+      setTimeout(() => {
+        d3.select(nodes[i])
+          .style('visibility', 'visible');
+        d3.select(nodes[i]).transition().ease(d3.easePolyOut).duration(120)
+          .attr('d', geopath.pointRadius(2.6 * geoScale / 40000));
+      }, appearTimeInterpolate(Math.sqrt(d.colorIndex)));
+    });
+    setTimeout(() => {
+      g.selectAll('.heat-line').transition().duration(500).style('opacity', 1);
+    }, 205);
+  }
+  else {
+    g.selectAll('.heat-point').each((d, i, nodes) => {
       d3.select(nodes[i])
         .style('visibility', 'visible');
       d3.select(nodes[i]).transition().ease(d3.easePolyOut).duration(120)
         .attr('d', geopath.pointRadius(2.6 * geoScale / 40000));
-    // }, appearTimeInterpolate(d.colorIndex));
-  });
-  // setTimeout(() => {
+    });
     g.selectAll('.heat-line').transition().duration(500).style('opacity', 1);
-  // }, 205);
+  }
 }
 
 async function lineStationPrepare(subwayLines,date,time){
