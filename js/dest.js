@@ -215,13 +215,11 @@ export async function drawDest(cellWidth){
                         main_g.append('path')
                             .datum(startPoint)
                             .attr('id', 'select-point')
-                            .attr('f', '#ff0000')
+                            .attr('fill', '#ff0000')
                             .attr('radius',100)
                             .attr("pointer-events", 'none')
-                            .attr('stroke', '#C7CFB7')
-                            .attr('fill', '#1A1C20')
                             .attr('transform', `translate(0, -${offset})`)
-                            .attr('d', geopath.pointRadius(3 * geoScale / 40000));
+                            .attr('d', geopath.pointRadius(2.6 * geoScale / 40000));
                             let c = geoprojection([lat,lon]);
                             // console.log(c);
                             let content =

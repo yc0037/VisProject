@@ -862,7 +862,7 @@ export function generateHeatMap(station, center, maxDis = 1.5, delta = [0.003 * 
       .attr('fill', '#ffffff')
       .attr('stroke', '#000000')
       .attr('transform', `translate(0, -${offset})`)
-      .attr('d', geopath.pointRadius(1.3 * geoScale / 40000));
+      .attr('d', geopath.pointRadius(2.6 * geoScale / 40000));
   }
   else {
     currentStation = d3.select(`#${station.properties.name}`);
