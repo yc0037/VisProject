@@ -42,6 +42,19 @@ let subwayLines;
 let allLinks; //保存初始的所有线路
 const keyTime=[1999, 2006, 2013, 2020];//关键帧时间
 let keyInfo={};
+let _maxDis = 1.5;
+
+export function setMaxDis(val) {
+  _maxDis = val;
+  setNormalMode();
+}
+
+function _setNormalMode() {
+  normalMode();
+  isHeatmap=false;
+}
+
+export const setNormalMode = _.debounce(_setNormalMode, 1000);
 
 //更改年月或日期调用函数
 export const updateMap = _.debounce(_updateMap,50)
@@ -127,9 +140,9 @@ export async function initMain(_date,_time) {
           showLoadingMask();
           setTimeout(() => {
             let [lat, lon] = ClientToCoordinate(e.clientX, e.clientY);
-            generateHeatMap('notStation', [lat, lon]);
+            generateHeatMap('notStation', [lat, lon], _maxDis);
             for(let i=0;i<keyTime.length;i++)
-              generateKeyHeatMap(keyTime[i],'notStation',[lat, lon]);
+              generateKeyHeatMap(keyTime[i],'notStation',[lat, lon], _maxDis);
             keyHeatMap();
             setTimeout(() => {
               hideLoadingMask();
@@ -177,6 +190,7 @@ export async function initMain(_date,_time) {
   mainSvg.call(zoom);
 
   drawLegend();
+  initKeyHeatMap();
 }
 
 function createLoadingMask() {
@@ -431,9 +445,9 @@ async function drawSubway(date,time) {
         showLoadingMask();
         setTimeout(() => {
           //console.log('当前站点',stations);
-          generateHeatMap(d, d.geometry.coordinates);
+          generateHeatMap(d, d.geometry.coordinates, _maxDis);
           for(let i=0;i<keyTime.length;i++){
-            generateKeyHeatMap(keyTime[i],d,d.geometry.coordinates);
+            generateKeyHeatMap(keyTime[i],d,d.geometry.coordinates, _maxDis);
           }
           keyHeatMap();
           setTimeout(() => {
@@ -626,7 +640,8 @@ function findPath(start, end) {
 
 //@history 标记历史时间点
 //@station 当前选中站点信息
-function generateKeyHeatMap(history, station, center, delta = [0.003 * 2, 0.002335 * 2], maxDis = 1.5){
+function generateKeyHeatMap(history, station, center, maxDis = 1.5, delta = [0.003 * 2, 0.002335 * 2]){
+  maxDis = maxDis || 1.5;
   console.log('test',keyInfo[history]);
   let [X, Y] = center;
   let [deltaX, deltaY] = delta;
@@ -728,6 +743,19 @@ function generateKeyHeatMap(history, station, center, delta = [0.003 * 2, 0.0023
   console.log('pointsnum',history,points.length);
 }
 
+function initKeyHeatMap() {
+  //分成四块区域
+  let offset = {1999:[0,50], 2006:[(windowWidth-mainWidth)/2,50], 2013:[0,300], 2020:[(windowWidth-mainWidth)/2,300]};
+
+  for(let keyTime in keyInfo){
+    let keyTimeSvg = pointG.append('g').attr('id', `key-points-${keyTime}`);
+    keyTimeSvg.append('text')
+        .text(keyTime)
+        .attr('font-size','0.8rem')
+        .attr('transform', `translate(${offset[keyTime][0]}, ${offset[keyTime][1]})`);
+  }
+}
+
 //将关键时间点的热力图画出
 function keyHeatMap(){
   let a = d3.rgb(0, 0, 0);
@@ -745,31 +773,31 @@ function keyHeatMap(){
 
   //console.log('gpmm', get_point_min_max(allPoints, 0));
 
-    let x = d3.scaleLinear()
-        .domain(get_point_min_max(allPoints, 0))
-        .range([0, (windowWidth-mainWidth)/2]);
+  let x = d3.scaleLinear()
+      .domain(get_point_min_max(allPoints, 0))
+      .range([0, (windowWidth-mainWidth)/2]);
 
-    let y = d3.scaleLinear()
-        .domain(get_point_min_max(allPoints, 1))
-        .range([0, 250]);
+  let y = d3.scaleLinear()
+      .domain(get_point_min_max(allPoints, 1))
+      .range([0, 250]);
 
   for(let keyTime in keyInfo){
     let points = keyInfo[keyTime].keyPoints;
-    let keyTimeSvg = pointG.append('g');
+    let keyTimeSvg = pointG.select(`#key-points-${keyTime}`);
+    keyTimeSvg.selectAll('circle').remove();
     keyTimeSvg.selectAll('circle')
         .data(points)
         .enter()
         .append('circle')
-        .attr('class', keyTime+'circle')
         .attr('cx',(d,i)=>x(d.geometry.coordinates[0]))
         .attr('cy',(d,i)=>(250-y(d.geometry.coordinates[1])))
         .attr('r',15000/allPoints.length)
         .attr('transform', `translate(${offset[keyTime][0]}, ${offset[keyTime][1]})`)
         .attr('fill', 'black');
-    keyTimeSvg.append('text')
-        .text(keyTime)
-        .attr('font-size','1rem')
-        .attr('transform', `translate(${offset[keyTime][0]}, ${offset[keyTime][1]})`);
+    // keyTimeSvg.append('text')
+    //     .text(keyTime)
+    //     .attr('font-size','1rem')
+    //     .attr('transform', `translate(${offset[keyTime][0]}, ${offset[keyTime][1]})`);
     //.style('visibility', 'hidden');
 
     // dots.selectAll('circle')
@@ -788,8 +816,9 @@ function keyHeatMap(){
     //     .attr('r',  (d, i) => radius(d[y_attr]))
   }
 }
-export function generateHeatMap(station, center, delta = [0.003 * 2, 0.002335 * 2], maxDis = 1.5) {
+export function generateHeatMap(station, center, maxDis = 1.5, delta = [0.003 * 2, 0.002335 * 2]) {
   console.log('current!!',station);
+  maxDis = maxDis || 1.5;
   isHeatmap = true;
   detailMode = true;
   if (currentStation) {

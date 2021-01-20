@@ -1,7 +1,7 @@
 import * as utils from './utils.js';
 import { updateSide } from './matrix.js';
 import {getStationOpen} from "./data.js";
-import {updateMap} from "./map.js";
+import {updateMap, setMaxDis} from "./map.js";
 
 const { windowHeight, windowWidth, outerMargin } = utils;
 
@@ -18,11 +18,11 @@ export async function initBottom() {
                     .ticks(10)
                     .tickFormat(d => d);
   let timeScale = d3.scaleLinear()
-                    .domain([0, 24])
+                    .domain([10, 90])
                     .range([outerMargin + windowWidth * 0.1, outerMargin + windowWidth * 0.9]);
 
   let timeAxis = d3.axisBottom(timeScale)
-                    .ticks(12)
+                    .ticks(16)
                     .tickFormat(d => d);
 
   let bottomSvg = d3.select('#bottom').append('svg')
@@ -129,11 +129,15 @@ function drawDrag(minYear, maxYear, offset) {
     return `${year}/${month}`;
   }
   function getTime(x) {
-    const segLen = (xMax - xMin - 8) / 1440,
+    const segLen = (xMax - xMin - 8) / 80,
           nSeg = Math.floor((x - xMin) / segLen),
-          hour = Math.floor(nSeg / 60),
-          minute = nSeg % 60;
-    return `${hour < 10 ? 0 : ''}${hour}:${minute < 10 ? 0 : ''}${minute}`;
+          minute = nSeg + 10;
+    return `${minute}分钟`;
+    // const segLen = (xMax - xMin - 8) / 1440,
+    //       nSeg = Math.floor((x - xMin) / segLen),
+    //       hour = Math.floor(nSeg / 60),
+    //       minute = nSeg % 60;
+    // return `${hour < 10 ? 0 : ''}${hour}:${minute < 10 ? 0 : ''}${minute}`;
   }
   function startDrag(e) {
     slideBlock = d3.select(this);
@@ -160,13 +164,9 @@ function drawDrag(minYear, maxYear, offset) {
   .on('start', startDrag)
   .on('drag', (e) => {
     slideBlock.attr('x', getX(e.x));
-    const text = d3.select('#time-text').text();
-    currentTime=parseInt(getTime(getX(e.x)).split(':')[0])+getTime(getX(e.x)).split(':')[1]/60;
+    const newTime = parseInt(getTime(getX(e.x)));
     d3.select('#time-text').text(getTime(getX(e.x)));
-    if (text !== d3.select('#time-text').text()){
-      updateMap(parseInt(currentYear)+(currentMonth-1)/12,currentTime);
-      //updateSide('time', getTime(getX(e.x)));
-    }
+    setMaxDis(newTime / 60);
   })
   .on('end', endDrag);
   bottomContainer.append('line')
@@ -198,7 +198,7 @@ function drawDrag(minYear, maxYear, offset) {
     .style('stroke', '#061178')
     .style('stroke-width', '1.5px');
   bottomContainer.append('rect')
-    .attr('x', (xMax+xMin)/2)
+    .attr('x', xMax)
     .attr('y', yTime - 10)
     .attr('width', 8)
     .attr('height', 20)
@@ -210,5 +210,5 @@ function drawDrag(minYear, maxYear, offset) {
     .attr('y', yTime + 5)
     .attr('font-size', '12px')
     .style('user-select', 'none')
-    .text(getTime((xMax+xMin)/2));
+    .text(getTime(xMax));
 }

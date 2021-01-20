@@ -32,6 +32,7 @@ body {
   /* background-color: #ffeeff; */
   flex: 1 0 0;
   min-width: 450px;
+  padding: 0 20px;
 }
 
 #bottom {
