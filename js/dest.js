@@ -191,6 +191,9 @@ export async function drawDest(cellWidth){
                         .attr('y', 50)
                         .attr('font-size', 12)
                         .text(subwayLines_2[j]['name']);
+                    if(subwayLines_2.length >= 5 && j != 0){
+                        accumulate_width -= 1;
+                    }
                     accumulate_width += subwayLines_2[j]['name'].length + 1;
                     //图上标记点
                     let lat = subwayLines_2[j]['x'];
