@@ -1073,7 +1073,7 @@ function normalMode() {
       .attr('stroke-width', 0.2);
     currentStation = null;
   }
-  pointG.selectAll('circle').remove();
+  pointG.selectAll('rect').remove();
   d3.select('#start-point').remove();
   g.select('#getOn-line').remove();
   g.select('#getOff-line').remove();
