@@ -36,7 +36,6 @@ let adjStation;
 let legends;
 let date=2020.83;//当前年月
 let time;     //当前时间
-let isHeatmap;//判断是否现在显示有热力图
 const maskTime = 200;
 let subwayLines;
 let allLinks; //保存初始的所有线路
@@ -47,7 +46,6 @@ export let _maxDis = 1;
 export function setMaxDis(val) {
   _maxDis = val;
   normalMode();
-  isHeatmap=false;
 }
 
 //更改年月或日期调用函数
@@ -55,10 +53,9 @@ export const updateMap = _.debounce(_updateMap,50)
 
 async function _updateMap(_date,_time){
   //更新时去掉已画热力图
-  if(isHeatmap===true)
+  if(detailMode)
   {
     normalMode();
-    isHeatmap=false;
   }
   //normalMode();
   pointG.selectAll('circle').remove();
@@ -129,7 +126,6 @@ export async function initMain(_date,_time) {
       .on("click", (e, d) => {
         if (detailMode) {
           normalMode();
-          isHeatmap=false;
         }
         else {
           showLoadingMask();
@@ -221,7 +217,7 @@ export function showLoadingMask() {
 const appearTimeInterpolate = d3.interpolate(10, 200);
 
 export function showHeatPoint() {
-  if (g.selectAll('.heat-point')._groups[0].length < 2000) {;
+  if (g.selectAll('.heat-point')._groups[0].length < 2000) {
     g.selectAll('.heat-point').each((d, i, nodes) => {
       setTimeout(() => {
         d3.select(nodes[i])
@@ -833,7 +829,6 @@ function keyHeatMap(){
 export function generateHeatMap(station, center, maxDis = 1.5, delta = [0.003 * 2, 0.002335 * 2]) {
   console.log('current!!',station);
   maxDis = maxDis || 1.5;
-  isHeatmap = true;
   detailMode = true;
   if (currentStation) {
     currentStation
@@ -1052,10 +1047,7 @@ export function generateHeatMap(station, center, maxDis = 1.5, delta = [0.003 * 
           .raise();
       }
     })
-    .on('click', function(e,d){
-      normalMode();
-      isHeatmap=false;
-    });
+    .on('click', normalMode);
 
   g.selectAll('.heat-line')
     .data(points)
