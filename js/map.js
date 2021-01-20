@@ -69,6 +69,9 @@ async function _updateMap(_date,_time){
       keyInfo[keyTime[i]].keyLinks] = await lineStationPrepare(subwayLines,keyTime[i],_time);
   }
   await drawSubway(date,time);
+  //更新legend
+  d3.select('#map-legend-container').remove();
+  drawLegend();
 }
 
 export async function initMain(_date,_time) {
@@ -467,8 +470,18 @@ async function drawSubway(date,time) {
 function drawLegend() {
   legends = d3.select('#main')
     .append('div').attr('id', 'map-legend-container');
+  //legends.remove();
   const colors = utils.colors;
   for (const key in colors) {
+    let flag=0;
+    for(let i=0;i<links.length;i++){
+      if(links[i].properties.name===key){
+        flag=1;
+        break;
+      }
+    }
+    if(!flag)
+      continue;
     const legend = legends.append('div')
             .attr('id', `legend-${key}`)
             .classed(`map-legend flex center`, true);
