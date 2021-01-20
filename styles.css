@@ -16,6 +16,8 @@ body {
 .title {
   justify-content: center;
   height: 10%;
+  font-size: 1.6rem;
+  font-weight: bold;
 }
 
 .main-line {
@@ -33,7 +35,7 @@ body {
   flex: 1 0 0;
   top:20%;
   min-width: 450px;
-  padding: 0 20px;
+  margin: 0 20px;
 }
 
 #side-up{
@@ -133,9 +135,8 @@ body {
   align-items: center;
   position: absolute;
   top: 10%;
-  left: 10%;
   height: calc(80% - 20px);
-  width: 61%;
+  width: 100%;
   background-color: #ccccccbb;
 }
 

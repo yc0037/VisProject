@@ -210,20 +210,20 @@ export function showLoadingMask() {
     .style('opacity', 1);
 }
 
-const appearTimeInterpolate = d3.interpolate(10, 350);
+// const appearTimeInterpolate = d3.interpolate(10, 200);
 
 export function showHeatPoint() {
   g.selectAll('.heat-point').each((d, i, nodes) => {
-    setTimeout(() => {
+    // setTimeout(() => {
       d3.select(nodes[i])
         .style('visibility', 'visible');
       d3.select(nodes[i]).transition().ease(d3.easePolyOut).duration(120)
         .attr('d', geopath.pointRadius(2.6 * geoScale / 40000));
-    }, appearTimeInterpolate(d.colorIndex));
+    // }, appearTimeInterpolate(d.colorIndex));
   });
-  setTimeout(() => {
+  // setTimeout(() => {
     g.selectAll('.heat-line').transition().duration(500).style('opacity', 1);
-  }, 355);
+  // }, 205);
 }
 
 async function lineStationPrepare(subwayLines,date,time){
@@ -763,13 +763,20 @@ function keyHeatMap(){
 
   //console.log('gpmm', get_point_min_max(allPoints, 0));
 
+  // 计算坐标范围
+  const xRange = get_point_min_max(allPoints, 0);
+  const yRange = get_point_min_max(allPoints, 1);
+  const [centerX, centerY] = [(xRange[1] + xRange[0]) / 2, (yRange[1] + yRange[0]) / 2];
+  const halfR = Math.max((xRange[1] - xRange[0]) / 2, (yRange[1] - yRange[0]) / 2, 0.15);
+  const radius = Math.min(20000 / allPoints.length, 2.5);
+
   let x = d3.scaleLinear()
-      .domain(get_point_min_max(allPoints, 0))
-      .range([0, (windowWidth-mainWidth)/2]);
+      .domain([centerX - halfR, centerX + halfR])
+      .range([radius, (windowWidth-mainWidth)/2 - 50]);
 
   let y = d3.scaleLinear()
-      .domain(get_point_min_max(allPoints, 1))
-      .range([0, 250]);
+      .domain([centerY - halfR, centerY + halfR])
+      .range([10, 250]);
 
   for(let keyTime in keyInfo){
     let points = keyInfo[keyTime].keyPoints;
@@ -781,7 +788,7 @@ function keyHeatMap(){
         .append('circle')
         .attr('cx',(d,i)=>x(d.geometry.coordinates[0]))
         .attr('cy',(d,i)=>(250-y(d.geometry.coordinates[1])))
-        .attr('r',20000/allPoints.length)
+        .attr('r', radius)
         .attr('transform', `translate(${offset[keyTime][0]}, ${offset[keyTime][1]})`)
         .attr('fill', d => (d.colorIndex < 0.2) ? smallColorInterpolate0(Math.sqrt(d.colorIndex)) : smallColorInterpolate(Math.sqrt(d.colorIndex)));
     //.style('visibility', 'hidden');
