@@ -667,13 +667,8 @@ function findPath(start, end) {
 
 //@history 标记历史时间点
 //@station 当前选中站点信息
-<<<<<<< HEAD
 export function generateKeyHeatMap(history, station, center, maxDis = 1.5, delta = [0.003 * 2, 0.002335 * 2]){
   maxDis = maxDis || 1.5;
-  // console.log('test',keyInfo[history]);
-=======
-function generateKeyHeatMap(history, station, center, delta = [0.03, 0.02335], maxDis = 0.6){
-  console.log('test',keyInfo[history]);
   let [X, Y] = center;
   let [deltaX, deltaY] = delta;
   let stations = keyInfo[history].keyStations;
@@ -771,8 +766,6 @@ function generateKeyHeatMap(history, station, center, delta = [0.03, 0.02335], m
     t = (t + 1) * 2;
   }
   keyInfo[history].keyPoints=points;
-<<<<<<< HEAD
-  // console.log('pointsnum',history,points.length);
 }
 
 function initKeyHeatMap() {
@@ -787,9 +780,6 @@ function initKeyHeatMap() {
         .attr('font-size','0.8rem')
         .attr('transform', `translate(${offset[keyTime][0]}, ${offset[keyTime][1]})`);
   }
-=======
-
->>>>>>> parent of 507aa62... 缩略图
 }
 
 //将关键时间点的热力图画出
@@ -798,25 +788,17 @@ export function keyHeatMap(){
   let b = d3.rgb(255, 255, 255);
   let c = d3.rgb(47, 84, 235);
   let allPoints=[];
-<<<<<<< HEAD
-  //分成四块区域
   let offset = {1999:[0,50], 2006:[(windowWidth-mainWidth)/2,50], 2013:[0,300], 2020:[(windowWidth-mainWidth)/2,300]};
   let smallColorInterpolate0 = d3.interpolateRgb(d3.color('#C0E218'), d3.color('#C70039'));
   let smallColorInterpolate = d3.interpolateRgb(d3.color('#C70039'), d3.color('#51C2D5'));
 
   for(let keyTime in keyInfo) {
     // console.log('pointsnum++',keyTime,keyInfo[keyTime].keyPoints.length);
-=======
-  let pointColorInterpolate = d3.interpolate(a, b);
-
-  for(let keyTime in keyInfo) {
->>>>>>> parent of 507aa62... 缩略图
     allPoints = allPoints.concat(allPoints,keyInfo[keyTime].keyPoints);
   }
 
   console.log('gpmm', get_point_min_max(allPoints, 0));
 
-<<<<<<< HEAD
   // 计算坐标范围
   const xRange = get_point_min_max(allPoints, 0);
   const yRange = get_point_min_max(allPoints, 1);
@@ -845,32 +827,6 @@ export function keyHeatMap(){
         .attr('height', radius)
         .attr('transform', `translate(${offset[keyTime][0]}, ${offset[keyTime][1]})`)
         .attr('fill', d => (d.colorIndex < 0.2) ? smallColorInterpolate0(Math.sqrt(d.colorIndex)) : smallColorInterpolate(Math.sqrt(d.colorIndex)));
-=======
-    let x = d3.scaleLinear()
-        .domain(get_point_min_max(allPoints, 0))
-        .range([0, windowWidth]);
-
-    let y = d3.scaleLinear()
-        .domain(get_point_min_max(allPoints, 1))
-        .range([0, windowHeight]);
-
-  for(let keyTime in keyInfo){
-    let points = keyInfo[keyTime].keyPoints;
-    pointG.selectAll('circle')
-        .data(points)
-        .enter()
-        .append('circle')
-        .attr('class', 'circle')
-        .attr('cx',(d,i)=>{
-          console.log(x(d.geometry.coordinates[0]));
-          return x(d.geometry.coordinates[0]);
-        })
-        .attr('cy',(d,i)=>y(d.geometry.coordinates[1]))
-        .attr('r',10)
-        // .attr('transform', `translate(${mainWidth}, -${offset})`)
-        .attr('fill', d => pointColorInterpolate(d.colorIndex));
-    console.log(points[0],"735行");
->>>>>>> parent of 507aa62... 缩略图
     //.style('visibility', 'hidden');
 
     // dots.selectAll('circle')
@@ -889,15 +845,10 @@ export function keyHeatMap(){
     //     .attr('r',  (d, i) => radius(d[y_attr]))
   }
 }
-<<<<<<< HEAD
+
 export function generateHeatMap(station, center, maxDis = 1.5, delta = [0.003 * 2, 0.002335 * 2]) {
   // console.log('current!!',station);
   maxDis = maxDis || 1.5;
-=======
-export function generateHeatMap(station, center, delta = [2 * 0.003, 2 * 0.002335], maxDis = 0.6) {
-  console.log('current!!',station);
-  isHeatmap = true;
->>>>>>> parent of 507aa62... 缩略图
   detailMode = true;
   if (currentStation) {
     currentStation
@@ -1152,10 +1103,7 @@ export function normalMode() {
       .attr('stroke-width', 0.2);
     currentStation = null;
   }
-<<<<<<< HEAD
   pointG.selectAll('rect').remove();
-=======
->>>>>>> parent of 507aa62... 缩略图
   d3.select('#start-point').remove();
   g.select('#getOn-line').remove();
   g.select('#getOff-line').remove();
