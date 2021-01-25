@@ -763,7 +763,11 @@ export function generateKeyHeatMap(history, station, center, maxDis = 1.5, delta
 
 function initKeyHeatMap() {
   //分成四块区域
-  let offset = {1999:[0,30], 2006:[(windowWidth-mainWidth)/2,30], 2013:[0,230], 2020:[(windowWidth-mainWidth)/2,230]};
+  let offset = {};
+  offset[keyTime[0]] = [0,30];
+  offset[keyTime[1]] = [(windowWidth-mainWidth)/2,30];
+  offset[keyTime[2]] =[0,230];
+  offset[keyTime[3]] =[(windowWidth-mainWidth)/2,230];
 
   for(let keyTime in keyInfo){
     let keyTimeSvg = pointG.append('g')
@@ -781,7 +785,12 @@ export function keyHeatMap(){
   let b = d3.rgb(255, 255, 255);
   let c = d3.rgb(47, 84, 235);
   let allPoints=[];
-  let offset = {1999:[0,30], 2006:[(windowWidth-mainWidth)/2,30], 2013:[0,230], 2020:[(windowWidth-mainWidth)/2,230]};
+  let offset = {};
+  offset[keyTime[0]] = [0,30];
+  offset[keyTime[1]] = [(windowWidth-mainWidth)/2,30];
+  offset[keyTime[2]] =[0,230];
+  offset[keyTime[3]] =[(windowWidth-mainWidth)/2,230];
+  //let offset = {1999:[0,30], 2006:[(windowWidth-mainWidth)/2,30], 2013:[0,230], 2020:[(windowWidth-mainWidth)/2,230]};
   let smallColorInterpolate0 = d3.interpolateRgb(d3.color('#C0E218'), d3.color('#C70039'));
   let smallColorInterpolate = d3.interpolateRgb(d3.color('#C70039'), d3.color('#51C2D5'));
 

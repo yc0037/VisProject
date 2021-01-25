@@ -187,8 +187,7 @@ export async function drawDest(cellWidth){
                     let lat = subwayLines_2[j]['x'];
                     let lon = subwayLines_2[j]['y'];
                     dest2.on('click', e =>{
-// <<<<<<< HEAD
-//
+                        
 //                         if(isHeatmap){
 //                             clickNum = 1 - clickNum;
 //                             //第一次点击的时候点出点，第二次点消
