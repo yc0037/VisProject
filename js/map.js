@@ -36,14 +36,13 @@ let adjStation;
 let legends;
 let date=2020.83;//当前年月
 let time;     //当前时间
-export var isHeatmap;//判断是否现在显示有热力图
+let isHeatmap;//判断是否现在显示有热力图
 const maskTime = 200;
 let subwayLines;
 let allLinks; //保存初始的所有线路
 export const keyTime=[1999, 2006, 2013, 2020];//关键帧时间
 let keyInfo={};
 export let _maxDis = 1;
-export let globalCenter;
 
 export function setMaxDis(val) {
   _maxDis = val;
@@ -59,9 +58,6 @@ async function _updateMap(_date,_time){
   {
     normalMode();
     isHeatmap=false;
-    d3.select('#main-tooltip').style('visibility','hidden');
-    d3.selectAll('#select-point').remove();
-    d3.selectAll('.second_class_dest').attr('font-size', 12);
   }
   //normalMode();
 
@@ -136,9 +132,6 @@ export async function initMain(_date,_time) {
         if (detailMode) {
           normalMode();
           isHeatmap=false;
-          d3.select('#main-tooltip').style('visibility','hidden');
-          d3.selectAll('#select-point').remove();
-          d3.selectAll('.second_class_dest').attr('font-size', 12);
         }
         else {
           showLoadingMask();
@@ -988,7 +981,6 @@ export function generateHeatMap(station, center, maxDis = 1.5, delta = [0.003 * 
       .attr('fill', d => pointColorInterpolate(d.colorIndex))
       .style('visibility', 'hidden')
     .on('mouseover', function(e, d) {
-
       if (currentDestination) {
         // undo previous animation
         currentDestination.attr('fill', pointColorInterpolate(currentD.colorIndex))
@@ -999,11 +991,9 @@ export function generateHeatMap(station, center, maxDis = 1.5, delta = [0.003 * 
         d3.select('#getOff-line').remove();
         d3.select('#walk-line').remove();
       }
-
       currentDestination = d3.select(this);
       currentD = d;
-      console.log(currentDestination);
-      console.log(d);
+
       if (d.getOn) {
         // 需要乘坐地铁的情况
         let path = findPath(d.getOn.id, d.getOff.id);
@@ -1073,11 +1063,7 @@ export function generateHeatMap(station, center, maxDis = 1.5, delta = [0.003 * 
     .on('click', function(e,d){
       normalMode();
       isHeatmap=false;
-      d3.select('#main-tooltip').style('visibility','hidden');
-      d3.selectAll('#select-point').remove();
-      d3.selectAll('.second_class_dest').attr('font-size', 12);
     });
-
 
   g.selectAll('.heat-line')
     .data(points)
@@ -1096,7 +1082,7 @@ export function generateHeatMap(station, center, maxDis = 1.5, delta = [0.003 * 
   arrangeOrder();
 }
 
-export function normalMode() {
+function normalMode() {
   detailMode = false;
   if (currentStation) {
     currentStation.attr('stroke', '#333333')
