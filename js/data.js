@@ -66,7 +66,7 @@ export async function getStationCode() {
           const lines = result.l;
           for (let line of lines) {
             for (let st of line.st) {
-              const stName = code2Station[st.si];
+              const stName = code2Station[st.sid];
               if (!stations.hasOwnProperty(stName)) {
                 stations[stName] = {};
               }

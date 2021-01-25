@@ -1,10 +1,8 @@
 import * as utils from './utils.js';
 import { getDest } from "./data.js";
-<<<<<<< HEAD
-import {generateHeatMap, hideLoadingMask, showHeatPoint, showLoadingMask,currentScale,currentTranslate,_maxDis,normalMode,isHeatmap,globalCenter} from "./map.js";
-=======
+
 import {generateHeatMap, hideLoadingMask, showHeatPoint, showLoadingMask, normalMode, currentScale, keyTime, currentTranslate, generateKeyHeatMap, keyHeatMap, _maxDis} from "./map.js";
->>>>>>> af5c2832122402eab7d06ef739d723f40ea8130f
+
 const { mainHeight, mainWidth,sideWidth } = utils;
 const beijingMap = './data/110000_full.json';
 const maskTime = 200;
@@ -15,11 +13,10 @@ d3.select('#side').select('svg').remove();
 let sideSvg = d3.select('#side-up')
 let titleMargin = 0.1 * document.body.clientHeight;
 let dest = sideSvg.append('div').attr('id', 'dest-container');
-<<<<<<< HEAD
+
 let clickNum = 0;
 
-=======
->>>>>>> af5c2832122402eab7d06ef739d723f40ea8130f
+
 
 sideSvg =  dest.append('svg')
     .style('width', '100%')
