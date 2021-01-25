@@ -763,7 +763,7 @@ export function generateKeyHeatMap(history, station, center, maxDis = 1.5, delta
 
 function initKeyHeatMap() {
   //分成四块区域
-  let offset = {1999:[0,50], 2006:[(windowWidth-mainWidth)/2,50], 2013:[0,300], 2020:[(windowWidth-mainWidth)/2,300]};
+  let offset = {1999:[0,30], 2006:[(windowWidth-mainWidth)/2,30], 2013:[0,230], 2020:[(windowWidth-mainWidth)/2,230]};
 
   for(let keyTime in keyInfo){
     let keyTimeSvg = pointG.append('g')
@@ -781,7 +781,7 @@ export function keyHeatMap(){
   let b = d3.rgb(255, 255, 255);
   let c = d3.rgb(47, 84, 235);
   let allPoints=[];
-  let offset = {1999:[0,50], 2006:[(windowWidth-mainWidth)/2,50], 2013:[0,300], 2020:[(windowWidth-mainWidth)/2,300]};
+  let offset = {1999:[0,30], 2006:[(windowWidth-mainWidth)/2,30], 2013:[0,230], 2020:[(windowWidth-mainWidth)/2,230]};
   let smallColorInterpolate0 = d3.interpolateRgb(d3.color('#C0E218'), d3.color('#C70039'));
   let smallColorInterpolate = d3.interpolateRgb(d3.color('#C70039'), d3.color('#51C2D5'));
 
@@ -802,10 +802,11 @@ export function keyHeatMap(){
   let x = d3.scaleLinear()
       .domain([centerX - halfR, centerX + halfR])
       .range([radius, (windowWidth-mainWidth)/2 - 50]);
-
+  let max_y = 230;
+  let min_y = 0;
   let y = d3.scaleLinear()
       .domain([centerY - halfR, centerY + halfR])
-      .range([10, 250]);
+      .range([min_y, max_y]);
 
   for(let keyTime in keyInfo){
     let points = keyInfo[keyTime].keyPoints;
@@ -815,7 +816,7 @@ export function keyHeatMap(){
         .enter()
         .append('rect')
         .attr('x',(d,i)=>x(d.geometry.coordinates[0]))
-        .attr('y',(d,i)=>(250-y(d.geometry.coordinates[1])))
+        .attr('y',(d,i)=>(max_y-y(d.geometry.coordinates[1])))
         .attr('width', radius)
         .attr('height', radius)
         .attr('transform', `translate(${offset[keyTime][0]}, ${offset[keyTime][1]})`)
@@ -1082,7 +1083,7 @@ export function generateHeatMap(station, center, maxDis = 1.5, delta = [0.003 * 
   arrangeOrder();
 }
 
-function normalMode() {
+export function normalMode() {
   detailMode = false;
   if (currentStation) {
     currentStation.attr('stroke', '#333333')

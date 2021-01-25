@@ -2,6 +2,8 @@ import * as utils from './utils.js';
 
 
 import {generateHeatMap, hideLoadingMask, showHeatPoint, showLoadingMask, normalMode, currentScale, keyTime, currentTranslate, generateKeyHeatMap, keyHeatMap, _maxDis} from "./map.js";
+import {getDest} from "./data.js";
+
 const { mainHeight, mainWidth,sideWidth } = utils;
 const beijingMap = './data/110000_full.json';
 const maskTime = 200;
@@ -174,7 +176,7 @@ export async function drawDest(cellWidth){
                         .attr('class','second_class_dest')
                         .attr('id',subwayLines_2[j]['name'])
                         .attr('x', jWidth * (accumulate_width + gap * (j+1) - 1))
-                        .attr('y', 50)
+                        .attr('y', 48)
                         .attr('font-size', 12)
                         .text(subwayLines_2[j]['name']);
                     if(subwayLines_2.length >= 5 && j != 0){
